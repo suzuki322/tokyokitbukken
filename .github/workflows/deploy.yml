@@ -1,0 +1,52 @@
+name: Deploy to Xserver
+
+on:
+  # NOTE: FTP_SERVER_DIR の値を確認・設定するまでは、誤ったパスにデプロイして
+  # しまわないよう push トリガーをあえて外し、手動実行(workflow_dispatch)のみに
+  # しています。動作確認が取れたら push トリガーを復活させます。
+  # push:
+  #   branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+        env:
+          # フロントに埋め込む値。api.php 側の config.php の API_TOKEN と
+          # 必ず同じ値を GitHub Secrets（VITE_API_TOKEN）に設定しておくこと
+          VITE_API_BASE: /api.php
+          VITE_API_TOKEN: ${{ secrets.VITE_API_TOKEN }}
+
+      - name: Assemble deploy folder
+        run: |
+          mkdir -p deploy
+          cp -r dist/. deploy/
+          cp server/api.php deploy/api.php
+          # config.php と data/ はサーバー側にのみ存在させる（デプロイでは上書きしない）
+
+      - name: Deploy over FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./deploy/
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          exclude: |
+            **/config.php
+            **/data/**
