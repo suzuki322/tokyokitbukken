@@ -1,0 +1,141 @@
+import { ArrowLeft, Pencil, Printer } from "lucide-react";
+import { rentRollTotals, surfaceYield, toNumber, yen } from "../model";
+
+function Row({ label, value, bold, big }) {
+  return (
+    <div className="sheet-row">
+      <div className="label">{label}</div>
+      <div className="value" style={{ fontWeight: bold ? "bold" : "normal", fontSize: big ? 16 : undefined, color: big ? "var(--navy)" : undefined }}>
+        {value || "-"}
+      </div>
+    </div>
+  );
+}
+
+export default function PropertyView({ property, onBack, onEdit }) {
+  const p = property;
+  const totals = rentRollTotals(p.rentRoll || []);
+  const y = surfaceYield(totals.annual, p.price);
+
+  return (
+    <div>
+      <div className="sheet-toolbar no-print">
+        <button className="btn secondary" onClick={onBack}>
+          <ArrowLeft size={16} /> 一覧に戻る
+        </button>
+        <button className="btn secondary" onClick={onEdit}>
+          <Pencil size={16} /> 編集
+        </button>
+        <button className="btn" onClick={() => window.print()}>
+          <Printer size={16} /> 印刷／PDF保存
+        </button>
+      </div>
+
+      <div className="sheet">
+        <div className="sheet-title">物件概要書　Property Outline Document</div>
+        <div className="sheet-subtitle">{p.name}</div>
+
+        <div className="sheet-section">
+          <h3>１．物件基本情報</h3>
+          <Row label="物件種別" value={p.propertyType} />
+          <Row label="所在（地番）" value={p.landNumber} />
+          <Row label="住居表示" value={p.residentialAddress} />
+          <Row label="交通" value={p.access} />
+          <Row label="地目／土地権利" value={`${p.landUse}／${p.landRight}`} />
+          <Row label="地積" value={p.landArea} />
+          <Row label="道路" value={p.road} />
+          <Row label="用途地域" value={p.zoning} />
+          <Row label="建蔽率／容積率" value={p.buildingCoverage} />
+          <Row label="防火指定" value={p.fireProtection} />
+        </div>
+
+        <div className="sheet-section">
+          <h3>２．建物概要</h3>
+          <Row label="家屋番号" value={p.houseNumber} />
+          <Row label="構造" value={p.structure} />
+          <Row label="用途" value={p.buildingUse} />
+          <Row label="延床面積" value={p.totalFloorArea} />
+          <Row label="築年月" value={p.builtDate} />
+          <Row label="建築確認／検査済証" value={p.permitNumbers} />
+          <Row
+            label="階層別面積"
+            value={(p.floors || []).map((f) => `${f.name}：${f.area}`).join("　/　")}
+          />
+        </div>
+
+        <div className="sheet-section sheet-price">
+          <h3>３．価格・収益</h3>
+          <Row label="価格" value={p.price} bold big />
+          <Row label="現況" value={p.status} />
+          <Row label="引渡" value={p.handover} />
+          <Row label="備考" value={p.notes} />
+          <Row label="満室想定月額（税抜・共益費込）" value={yen(totals.total)} />
+          <Row label="満室想定年額（税抜・共益費込）" value={yen(totals.annual)} bold />
+          <Row
+            label="表面利回り（満室想定）"
+            value={y !== null ? `${y.toFixed(2)}%` : "価格未入力"}
+            bold
+          />
+        </div>
+
+        {p.rentRoll && p.rentRoll.length > 0 && (
+          <div className="sheet-section">
+            <h3>４．想定レントロール</h3>
+            <div style={{ padding: 12, overflowX: "auto" }}>
+              <table className="sheet-rentroll">
+                <thead>
+                  <tr>
+                    <th>部屋No</th><th>用途</th><th>契約面積(㎡)</th><th>契約面積(坪)</th>
+                    <th>賃料(税抜)</th><th>共益費(税抜)</th><th>賃料+共益費</th><th>坪単価</th>
+                    <th>保証金</th><th>現況/備考</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {p.rentRoll.map((r, i) => {
+                    const sum = toNumber(r.rent) + toNumber(r.cam);
+                    const tsubo = toNumber(r.areaTsubo);
+                    return (
+                      <tr key={i}>
+                        <td>{r.room}</td>
+                        <td>{r.use}</td>
+                        <td>{r.areaM2}㎡</td>
+                        <td>{r.areaTsubo}坪</td>
+                        <td>{yen(r.rent)}</td>
+                        <td>{yen(r.cam)}</td>
+                        <td>{yen(sum)}</td>
+                        <td>{tsubo ? `@${yen(sum / tsubo)}/坪` : "-"}</td>
+                        <td>{r.deposit ? yen(r.deposit) : "-"}</td>
+                        <td>{r.status}</td>
+                      </tr>
+                    );
+                  })}
+                  <tr className="total">
+                    <td colSpan={2}>合計</td>
+                    <td>{totals.areaM2.toFixed(2)}㎡</td>
+                    <td>{totals.areaTsubo.toFixed(2)}坪</td>
+                    <td>{yen(totals.rent)}</td>
+                    <td>{yen(totals.cam)}</td>
+                    <td>{yen(totals.total)}</td>
+                    <td>
+                      {totals.areaTsubo ? `@${yen(totals.total / totals.areaTsubo)}/坪` : "-"}
+                    </td>
+                    <td>{yen(totals.deposit)}</td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        <div className="sheet-footer">
+          {p.source && <div>出所：{p.source}</div>}
+          <div className="company" style={{ marginTop: 10 }}>tokyokit株式会社</div>
+          <div>TEL：050-5582-2159　FAX：045-330-4295</div>
+          <div>〒230-0078 神奈川県横浜市鶴見区岸谷3-6-33</div>
+          <div>神奈川県知事（1）第32139号</div>
+        </div>
+      </div>
+    </div>
+  );
+}
