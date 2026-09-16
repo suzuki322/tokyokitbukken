@@ -1,11 +1,8 @@
 name: Deploy to Xserver
 
 on:
-  # NOTE: FTP_SERVER_DIR の値を確認・設定するまでは、誤ったパスにデプロイして
-  # しまわないよう push トリガーをあえて外し、手動実行(workflow_dispatch)のみに
-  # しています。動作確認が取れたら push トリガーを復活させます。
-  # push:
-  #   branches: [main]
+  push:
+    branches: [main]
   workflow_dispatch: {}
 
 jobs:
