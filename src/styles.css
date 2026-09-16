@@ -134,6 +134,33 @@ input, select, textarea {
 }
 textarea { resize: vertical; min-height: 60px; }
 
+.station-suggest {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  max-height: 220px;
+  overflow-y: auto;
+}
+.station-suggest-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.station-suggest-item:hover { background: var(--navy-light); }
+.station-suggest-item.muted { color: var(--muted); cursor: default; }
+.station-suggest-item.muted:hover { background: transparent; }
+.station-suggest .station-name { font-weight: bold; color: var(--text); white-space: nowrap; }
+.station-suggest .station-line { color: var(--muted); font-size: 12px; }
+
 .rentroll-table {
   width: 100%;
   border-collapse: collapse;

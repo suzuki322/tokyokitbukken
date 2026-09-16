@@ -7,6 +7,8 @@ export function emptyProperty() {
     landNumbers: [""],
     residentialAddress: "",
     access: "",
+    stationText: "",
+    walkText: "",
     landUse: "宅地",
     landRight: "所有権",
     landArea: "",
@@ -46,6 +48,20 @@ export function landNumbersOf(property) {
     return split.length > 0 ? split : [""];
   }
   return [""];
+}
+
+// 交通（最寄駅・徒歩分数）を { stationText, walkText } に分解する。新データは
+// stationText/walkText を個別に持つが、旧データは access（自由記述の1文字列）
+// のみのため、その場合は access をまるごと stationText 側に入れて表示・再編集
+// できるようにする。
+export function accessPartsOf(property) {
+  if (property?.stationText !== undefined || property?.walkText !== undefined) {
+    return {
+      stationText: property.stationText || "",
+      walkText: property.walkText || "",
+    };
+  }
+  return { stationText: property?.access || "", walkText: "" };
 }
 
 export function emptyRentRow() {
