@@ -28,15 +28,16 @@ export function emptyProperty() {
     fireProtection: "",
     buildings: [emptyBuilding()],
     price: "",
+    annualIncome: "",
     status: "",
     handover: "相談",
     notes: "",
     rentRoll: [emptyRentRow()],
-    source: "",
     route: "",
     purchasePrice: "",
     dealTerms: "",
     otherNotes: "",
+    attachments: [],
   };
 }
 
