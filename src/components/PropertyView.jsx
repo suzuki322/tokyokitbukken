@@ -1,5 +1,6 @@
 import { ArrowLeft, Pencil, Printer } from "lucide-react";
 import {
+  buildingsOf,
   coverageRatioPartsOf,
   landAreaPartsOf,
   landNumbersOf,
@@ -32,6 +33,7 @@ export default function PropertyView({ property, onBack, onEdit }) {
   const roadSummary = ROAD_DIRECTIONS.map(({ key, label }) => (roadParts[key] ? `${label}：${roadParts[key]}` : null))
     .filter(Boolean)
     .join("　");
+  const buildings = buildingsOf(p);
 
   return (
     <div>
@@ -69,16 +71,33 @@ export default function PropertyView({ property, onBack, onEdit }) {
 
         <div className="sheet-section">
           <h3>２．建物概要</h3>
-          <Row label="家屋番号" value={p.houseNumber} />
-          <Row label="構造" value={p.structure} />
-          <Row label="用途" value={p.buildingUse} />
-          <Row label="延床面積" value={p.totalFloorArea} />
-          <Row label="築年月" value={p.builtDate} />
-          <Row label="建築確認／検査済証" value={p.permitNumbers} />
-          <Row
-            label="階層別面積"
-            value={(p.floors || []).map((f) => `${f.name}：${f.area}`).join("　/　")}
-          />
+          {buildings.map((b, i) => (
+            <div key={i}>
+              {buildings.length > 1 && (
+                <div
+                  style={{
+                    background: "var(--gray)",
+                    fontWeight: "bold",
+                    fontSize: 12,
+                    padding: "4px 12px",
+                    borderBottom: "1px solid var(--border)",
+                  }}
+                >
+                  建物{i + 1}
+                </div>
+              )}
+              <Row label="家屋番号" value={b.houseNumber} />
+              <Row label="構造" value={b.structure} />
+              <Row label="用途" value={b.buildingUse} />
+              <Row label="延床面積" value={b.totalFloorArea} />
+              <Row label="築年月" value={b.builtDate} />
+              <Row label="建築確認／検査済証" value={b.permitNumbers} />
+              <Row
+                label="階層別面積"
+                value={(b.floors || []).map((f) => `${f.name}：${f.area}`).join("　/　")}
+              />
+            </div>
+          ))}
         </div>
 
         <div className="sheet-section sheet-price">

@@ -2,7 +2,9 @@ import { useState } from "react";
 import { Plus, Trash2, Save, ArrowLeft } from "lucide-react";
 import {
   accessPartsOf,
+  buildingsOf,
   coverageRatioPartsOf,
+  emptyBuilding,
   emptyRentRow,
   landAreaPartsOf,
   landNumbersOf,
@@ -75,6 +77,7 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
     ...landAreaPartsOf(initial),
     roads: roadPartsOf(initial),
     ...coverageRatioPartsOf(initial),
+    buildings: buildingsOf(initial),
   }));
 
   const set = (key) => (e) => setData({ ...data, [key]: e.target.value });
@@ -91,14 +94,32 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
   const removeLandNumber = (idx) =>
     setData({ ...data, landNumbers: data.landNumbers.filter((_, i) => i !== idx) });
 
-  const setFloor = (idx, key) => (e) => {
-    const floors = [...data.floors];
-    floors[idx] = { ...floors[idx], [key]: e.target.value };
-    setData({ ...data, floors });
+  const setBuilding = (bIdx, key) => (e) => {
+    const buildings = [...data.buildings];
+    buildings[bIdx] = { ...buildings[bIdx], [key]: e.target.value };
+    setData({ ...data, buildings });
   };
-  const addFloor = () => setData({ ...data, floors: [...data.floors, { name: "", area: "" }] });
-  const removeFloor = (idx) =>
-    setData({ ...data, floors: data.floors.filter((_, i) => i !== idx) });
+  const addBuilding = () => setData({ ...data, buildings: [...data.buildings, emptyBuilding()] });
+  const removeBuilding = (bIdx) =>
+    setData({ ...data, buildings: data.buildings.filter((_, i) => i !== bIdx) });
+
+  const setFloor = (bIdx, fIdx, key) => (e) => {
+    const buildings = [...data.buildings];
+    const floors = [...buildings[bIdx].floors];
+    floors[fIdx] = { ...floors[fIdx], [key]: e.target.value };
+    buildings[bIdx] = { ...buildings[bIdx], floors };
+    setData({ ...data, buildings });
+  };
+  const addFloor = (bIdx) => {
+    const buildings = [...data.buildings];
+    buildings[bIdx] = { ...buildings[bIdx], floors: [...buildings[bIdx].floors, { name: "", area: "" }] };
+    setData({ ...data, buildings });
+  };
+  const removeFloor = (bIdx, fIdx) => {
+    const buildings = [...data.buildings];
+    buildings[bIdx] = { ...buildings[bIdx], floors: buildings[bIdx].floors.filter((_, i) => i !== fIdx) };
+    setData({ ...data, buildings });
+  };
 
   const setRent = (idx, key) => (e) => {
     const rentRoll = [...data.rentRoll];
@@ -270,47 +291,83 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
 
       <div className="form-section">
         <h2>２．建物概要</h2>
-        <div className="form-grid">
-          <Field label="家屋番号">
-            <input value={data.houseNumber} onChange={set("houseNumber")} />
-          </Field>
-          <Field label="構造">
-            <input value={data.structure} onChange={set("structure")} />
-          </Field>
-          <Field label="用途">
-            <input value={data.buildingUse} onChange={set("buildingUse")} />
-          </Field>
-          <Field label="延床面積">
-            <input value={data.totalFloorArea} onChange={set("totalFloorArea")} />
-          </Field>
-          <Field label="築年月">
-            <input value={data.builtDate} onChange={set("builtDate")} />
-          </Field>
-          <Field label="建築確認／検査済証">
-            <input value={data.permitNumbers} onChange={set("permitNumbers")} />
-          </Field>
-        </div>
-        <div style={{ padding: "0 14px 14px" }}>
-          <table className="rentroll-table">
-            <thead>
-              <tr><th style={{ width: "40%" }}>階</th><th>面積</th><th style={{ width: 40 }}></th></tr>
-            </thead>
-            <tbody>
-              {data.floors.map((f, i) => (
-                <tr key={i}>
-                  <td><input value={f.name} onChange={setFloor(i, "name")} placeholder="1F" /></td>
-                  <td><input value={f.area} onChange={setFloor(i, "area")} placeholder="90.98㎡" /></td>
-                  <td>
-                    <button type="button" className="btn danger" onClick={() => removeFloor(i)}>
-                      <Trash2 size={14} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <button type="button" className="btn secondary" style={{ marginTop: 8 }} onClick={addFloor}>
-            <Plus size={14} /> 階を追加
+        {data.buildings.map((b, bIdx) => (
+          <div
+            key={bIdx}
+            style={{
+              borderBottom: bIdx < data.buildings.length - 1 ? "2px solid var(--border)" : "none",
+            }}
+          >
+            {data.buildings.length > 1 && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "10px 14px 0",
+                }}
+              >
+                <div style={{ fontWeight: "bold", color: "var(--navy)", fontSize: 13 }}>
+                  建物{bIdx + 1}
+                </div>
+                <button type="button" className="btn danger" onClick={() => removeBuilding(bIdx)}>
+                  <Trash2 size={14} /> この建物を削除
+                </button>
+              </div>
+            )}
+            <div className="form-grid">
+              <Field label="家屋番号">
+                <input value={b.houseNumber} onChange={setBuilding(bIdx, "houseNumber")} />
+              </Field>
+              <Field label="構造">
+                <input value={b.structure} onChange={setBuilding(bIdx, "structure")} />
+              </Field>
+              <Field label="用途">
+                <input value={b.buildingUse} onChange={setBuilding(bIdx, "buildingUse")} />
+              </Field>
+              <Field label="延床面積">
+                <input value={b.totalFloorArea} onChange={setBuilding(bIdx, "totalFloorArea")} />
+              </Field>
+              <Field label="築年月">
+                <input value={b.builtDate} onChange={setBuilding(bIdx, "builtDate")} />
+              </Field>
+              <Field label="建築確認／検査済証">
+                <input value={b.permitNumbers} onChange={setBuilding(bIdx, "permitNumbers")} />
+              </Field>
+            </div>
+            <div style={{ padding: "0 14px 14px" }}>
+              <table className="rentroll-table">
+                <thead>
+                  <tr><th style={{ width: "40%" }}>階</th><th>面積</th><th style={{ width: 40 }}></th></tr>
+                </thead>
+                <tbody>
+                  {b.floors.map((f, fIdx) => (
+                    <tr key={fIdx}>
+                      <td><input value={f.name} onChange={setFloor(bIdx, fIdx, "name")} placeholder="1F" /></td>
+                      <td><input value={f.area} onChange={setFloor(bIdx, fIdx, "area")} placeholder="90.98㎡" /></td>
+                      <td>
+                        <button type="button" className="btn danger" onClick={() => removeFloor(bIdx, fIdx)}>
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <button
+                type="button"
+                className="btn secondary"
+                style={{ marginTop: 8 }}
+                onClick={() => addFloor(bIdx)}
+              >
+                <Plus size={14} /> 階を追加
+              </button>
+            </div>
+          </div>
+        ))}
+        <div style={{ padding: 14 }}>
+          <button type="button" className="btn secondary" onClick={addBuilding}>
+            <Plus size={14} /> 建物を追加
           </button>
         </div>
       </div>
