@@ -44,8 +44,11 @@ function respond(int $status, array $body): void {
 }
 
 // --- 認証 ---
+// 添付ファイルの表示・ダウンロード（<a href>・<img src> 等、リクエストヘッダを
+// 付けられない箇所からアクセスする）のみ、クエリパラメータ ?token=... でも認証
+// できるようにする。それ以外は従来どおり X-Api-Token ヘッダのみ。
 $headers = getallheaders() ?: [];
-$token = $headers["X-Api-Token"] ?? $headers["x-api-token"] ?? "";
+$token = $headers["X-Api-Token"] ?? $headers["x-api-token"] ?? ($_GET["token"] ?? "");
 if (!defined("API_TOKEN") || API_TOKEN === "" || !hash_equals(API_TOKEN, (string) $token)) {
     respond(401, ["error" => "認証トークンが無効です。"]);
 }
@@ -117,6 +120,34 @@ if ($method === "GET" && $action === "get") {
     respond(404, ["error" => "指定の物件が見つかりません。"]);
 }
 
+if ($method === "GET" && $action === "downloadAttachment") {
+    $id = $_GET["id"] ?? "";
+    $attachmentId = $_GET["attachmentId"] ?? "";
+    foreach ($store["properties"] as $p) {
+        if ($p["id"] === $id) {
+            foreach (($p["attachments"] ?? []) as $a) {
+                if ($a["id"] === $attachmentId) {
+                    $path = $dataDir . "/uploads/" . $id . "/" . $a["filename"];
+                    if (!file_exists($path)) {
+                        respond(404, ["error" => "ファイルが見つかりません。"]);
+                    }
+                    header("Content-Type: " . ($a["mimeType"] ?: "application/octet-stream"));
+                    header(
+                        "Content-Disposition: inline; filename=\"" .
+                            rawurlencode($a["originalName"] ?? $a["filename"]) .
+                            "\""
+                    );
+                    header("Content-Length: " . filesize($path));
+                    readfile($path);
+                    exit;
+                }
+            }
+            respond(404, ["error" => "ファイルが見つかりません。"]);
+        }
+    }
+    respond(404, ["error" => "指定の物件が見つかりません。"]);
+}
+
 $input = json_decode(file_get_contents("php://input"), true);
 if ($method === "POST" && !is_array($input)) {
     $input = [];
@@ -175,7 +206,123 @@ if ($method === "POST" && $action === "delete") {
             }
             array_splice($store["properties"], $i, 1);
             saveStore($dataFile, $store);
+            removeUploadDir($dataDir . "/uploads/" . $id);
             respond(200, ["ok" => true]);
+        }
+    }
+    respond(404, ["error" => "指定の物件が見つかりません。"]);
+}
+
+// --- 添付ファイル（PDF・画像） ---
+// 対応拡張子とサイズ上限（20MB）
+$ATTACHMENT_ALLOWED_EXT = ["pdf", "jpg", "jpeg", "png", "gif", "webp"];
+$ATTACHMENT_MAX_SIZE = 20 * 1024 * 1024;
+
+function removeUploadDir(string $dir): void {
+    if (!is_dir($dir)) {
+        return;
+    }
+    $files = scandir($dir) ?: [];
+    foreach ($files as $f) {
+        if ($f === "." || $f === "..") continue;
+        $path = $dir . "/" . $f;
+        if (is_dir($path)) {
+            removeUploadDir($path);
+        } else {
+            @unlink($path);
+        }
+    }
+    @rmdir($dir);
+}
+
+if ($method === "POST" && $action === "uploadAttachment") {
+    $id = $_GET["id"] ?? "";
+
+    if (!isset($_FILES["file"])) {
+        respond(400, ["error" => "ファイルが見つかりません。"]);
+    }
+    $file = $_FILES["file"];
+    if ($file["error"] !== UPLOAD_ERR_OK) {
+        $msg = $file["error"] === UPLOAD_ERR_INI_SIZE || $file["error"] === UPLOAD_ERR_FORM_SIZE
+            ? "ファイルサイズが大きすぎます。"
+            : "アップロードに失敗しました（エラーコード：" . $file["error"] . "）。";
+        respond(400, ["error" => $msg]);
+    }
+    if ($file["size"] > $ATTACHMENT_MAX_SIZE) {
+        respond(400, ["error" => "ファイルサイズが大きすぎます（上限20MB）。"]);
+    }
+    $ext = strtolower(pathinfo($file["name"], PATHINFO_EXTENSION));
+    if (!in_array($ext, $ATTACHMENT_ALLOWED_EXT, true)) {
+        respond(400, ["error" => "対応していないファイル形式です（PDF・画像のみ）。"]);
+    }
+
+    foreach ($store["properties"] as $i => $p) {
+        if ($p["id"] === $id) {
+            $uploadDir = $dataDir . "/uploads/" . $id;
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0775, true);
+            }
+            $attachmentId = bin2hex(random_bytes(8));
+            $storedName = $attachmentId . "." . $ext;
+            if (!move_uploaded_file($file["tmp_name"], $uploadDir . "/" . $storedName)) {
+                respond(500, ["error" => "ファイルの保存に失敗しました。"]);
+            }
+            $mimeTypes = [
+                "pdf" => "application/pdf",
+                "jpg" => "image/jpeg",
+                "jpeg" => "image/jpeg",
+                "png" => "image/png",
+                "gif" => "image/gif",
+                "webp" => "image/webp",
+            ];
+            $attachments = $p["attachments"] ?? [];
+            $attachments[] = [
+                "id" => $attachmentId,
+                "filename" => $storedName,
+                "originalName" => $file["name"],
+                "mimeType" => $mimeTypes[$ext] ?? "application/octet-stream",
+                "size" => $file["size"],
+                "uploadedAt" => date(DATE_ATOM),
+            ];
+            $p["attachments"] = $attachments;
+            $p["version"] = (int) $p["version"] + 1;
+            $p["updatedAt"] = date(DATE_ATOM);
+            $store["properties"][$i] = $p;
+            saveStore($dataFile, $store);
+            respond(200, ["property" => $p]);
+        }
+    }
+    respond(404, ["error" => "指定の物件が見つかりません。"]);
+}
+
+if ($method === "POST" && $action === "deleteAttachment") {
+    $id = $_GET["id"] ?? "";
+    $attachmentId = $_GET["attachmentId"] ?? "";
+
+    foreach ($store["properties"] as $i => $p) {
+        if ($p["id"] === $id) {
+            $attachments = $p["attachments"] ?? [];
+            $target = null;
+            $remaining = [];
+            foreach ($attachments as $a) {
+                if ($a["id"] === $attachmentId) {
+                    $target = $a;
+                } else {
+                    $remaining[] = $a;
+                }
+            }
+            if ($target !== null) {
+                $path = $dataDir . "/uploads/" . $id . "/" . $target["filename"];
+                if (file_exists($path)) {
+                    @unlink($path);
+                }
+            }
+            $p["attachments"] = $remaining;
+            $p["version"] = (int) $p["version"] + 1;
+            $p["updatedAt"] = date(DATE_ATOM);
+            $store["properties"][$i] = $p;
+            saveStore($dataFile, $store);
+            respond(200, ["property" => $p]);
         }
     }
     respond(404, ["error" => "指定の物件が見つかりません。"]);
