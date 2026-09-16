@@ -1,5 +1,14 @@
 import { ArrowLeft, Pencil, Printer } from "lucide-react";
-import { landNumbersOf, rentRollTotals, surfaceYield, toNumber, yen } from "../model";
+import {
+  landAreaPartsOf,
+  landNumbersOf,
+  rentRollTotals,
+  ROAD_DIRECTIONS,
+  roadPartsOf,
+  surfaceYield,
+  toNumber,
+  yen,
+} from "../model";
 
 function Row({ label, value, bold, big }) {
   return (
@@ -16,6 +25,11 @@ export default function PropertyView({ property, onBack, onEdit }) {
   const p = property;
   const totals = rentRollTotals(p.rentRoll || []);
   const y = surfaceYield(totals.annual, p.price);
+  const landAreaParts = landAreaPartsOf(p);
+  const roadParts = roadPartsOf(p);
+  const roadSummary = ROAD_DIRECTIONS.map(({ key, label }) => (roadParts[key] ? `${label}：${roadParts[key]}` : null))
+    .filter(Boolean)
+    .join("　");
 
   return (
     <div>
@@ -42,10 +56,12 @@ export default function PropertyView({ property, onBack, onEdit }) {
           <Row label="住居表示" value={p.residentialAddress} />
           <Row label="交通" value={p.access} />
           <Row label="地目／土地権利" value={`${p.landUse}／${p.landRight}`} />
-          <Row label="地積" value={p.landArea} />
-          <Row label="道路" value={p.road} />
+          <Row label="地積（公募）" value={landAreaParts.landAreaPublic} />
+          <Row label="地積（実測）" value={landAreaParts.landAreaSurveyed} />
+          <Row label="道路" value={roadSummary} />
           <Row label="用途地域" value={p.zoning} />
-          <Row label="建蔽率／容積率" value={p.buildingCoverage} />
+          <Row label="建蔽率" value={p.buildingCoverage} />
+          <Row label="容積率" value={p.floorAreaRatio} />
           <Row label="防火指定" value={p.fireProtection} />
         </div>
 

@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { Plus, Trash2, Save, ArrowLeft } from "lucide-react";
-import { accessPartsOf, emptyRentRow, landNumbersOf } from "../model";
+import {
+  accessPartsOf,
+  coverageRatioPartsOf,
+  emptyRentRow,
+  landAreaPartsOf,
+  landNumbersOf,
+  ROAD_DIRECTIONS,
+  roadPartsOf,
+} from "../model";
 import StationInput from "./StationInput";
 
 // 不動産登記規則上の地目区分（全23種）。実務でよく使うものを先頭に配置。
@@ -30,6 +38,26 @@ const LAND_USE_OPTIONS = [
   "鉱泉地",
 ];
 
+// 都市計画法上の用途地域（全13種）。
+const ZONING_OPTIONS = [
+  "第一種低層住居専用地域",
+  "第二種低層住居専用地域",
+  "田園住居地域",
+  "第一種中高層住居専用地域",
+  "第二種中高層住居専用地域",
+  "第一種住居地域",
+  "第二種住居地域",
+  "準住居地域",
+  "近隣商業地域",
+  "商業地域",
+  "準工業地域",
+  "工業地域",
+  "工業専用地域",
+];
+
+// 建築基準法上の防火指定区分。
+const FIRE_PROTECTION_OPTIONS = ["防火地域", "準防火地域", "22条区域", "指定なし"];
+
 function Field({ label, children }) {
   return (
     <label>
@@ -44,9 +72,15 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
     ...initial,
     landNumbers: landNumbersOf(initial),
     ...accessPartsOf(initial),
+    ...landAreaPartsOf(initial),
+    roads: roadPartsOf(initial),
+    ...coverageRatioPartsOf(initial),
   }));
 
   const set = (key) => (e) => setData({ ...data, [key]: e.target.value });
+
+  const setRoad = (key) => (e) =>
+    setData({ ...data, roads: { ...data.roads, [key]: e.target.value } });
 
   const setLandNumber = (idx) => (e) => {
     const landNumbers = [...data.landNumbers];
@@ -180,20 +214,56 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
               />
             </div>
           </Field>
-          <Field label="地積">
-            <input value={data.landArea} onChange={set("landArea")} placeholder="例：134.11㎡（40.57坪）" />
+          <Field label="地積（公募）">
+            <input
+              value={data.landAreaPublic}
+              onChange={set("landAreaPublic")}
+              placeholder="例：134.11㎡（40.57坪）"
+            />
           </Field>
-          <Field label="道路">
-            <input value={data.road} onChange={set("road")} />
+          <Field label="地積（実測）">
+            <input
+              value={data.landAreaSurveyed}
+              onChange={set("landAreaSurveyed")}
+              placeholder="例：135.20㎡（40.90坪）"
+            />
           </Field>
+          {ROAD_DIRECTIONS.map(({ key, label }) => (
+            <Field key={key} label={`道路（${label}）`}>
+              <input value={data.roads[key]} onChange={setRoad(key)} placeholder="例：公道 幅員6.0m" />
+            </Field>
+          ))}
           <Field label="用途地域">
-            <input value={data.zoning} onChange={set("zoning")} />
+            <select value={data.zoning} onChange={set("zoning")}>
+              <option value="">未選択</option>
+              {!ZONING_OPTIONS.includes(data.zoning) && data.zoning && (
+                <option value={data.zoning}>{data.zoning}</option>
+              )}
+              {ZONING_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
           </Field>
-          <Field label="建蔽率／容積率">
-            <input value={data.buildingCoverage} onChange={set("buildingCoverage")} placeholder="例：80％／300％" />
+          <Field label="建蔽率">
+            <input value={data.buildingCoverage} onChange={set("buildingCoverage")} placeholder="例：80％" />
+          </Field>
+          <Field label="容積率">
+            <input value={data.floorAreaRatio} onChange={set("floorAreaRatio")} placeholder="例：300％" />
           </Field>
           <Field label="防火指定">
-            <input value={data.fireProtection} onChange={set("fireProtection")} />
+            <select value={data.fireProtection} onChange={set("fireProtection")}>
+              <option value="">未選択</option>
+              {!FIRE_PROTECTION_OPTIONS.includes(data.fireProtection) && data.fireProtection && (
+                <option value={data.fireProtection}>{data.fireProtection}</option>
+              )}
+              {FIRE_PROTECTION_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
           </Field>
         </div>
       </div>
