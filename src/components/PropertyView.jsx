@@ -1,5 +1,6 @@
 import { ArrowLeft, Pencil, Printer } from "lucide-react";
 import {
+  coverageRatioPartsOf,
   landAreaPartsOf,
   landNumbersOf,
   rentRollTotals,
@@ -27,6 +28,7 @@ export default function PropertyView({ property, onBack, onEdit }) {
   const y = surfaceYield(totals.annual, p.price);
   const landAreaParts = landAreaPartsOf(p);
   const roadParts = roadPartsOf(p);
+  const coverageRatioParts = coverageRatioPartsOf(p);
   const roadSummary = ROAD_DIRECTIONS.map(({ key, label }) => (roadParts[key] ? `${label}：${roadParts[key]}` : null))
     .filter(Boolean)
     .join("　");
@@ -60,8 +62,8 @@ export default function PropertyView({ property, onBack, onEdit }) {
           <Row label="地積（実測）" value={landAreaParts.landAreaSurveyed} />
           <Row label="道路" value={roadSummary} />
           <Row label="用途地域" value={p.zoning} />
-          <Row label="建蔽率" value={p.buildingCoverage} />
-          <Row label="容積率" value={p.floorAreaRatio} />
+          <Row label="建蔽率" value={coverageRatioParts.buildingCoverage} />
+          <Row label="容積率" value={coverageRatioParts.floorAreaRatio} />
           <Row label="防火指定" value={p.fireProtection} />
         </div>
 
