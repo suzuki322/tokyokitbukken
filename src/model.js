@@ -33,6 +33,10 @@ export function emptyProperty() {
     notes: "",
     rentRoll: [emptyRentRow()],
     source: "",
+    route: "",
+    purchasePrice: "",
+    dealTerms: "",
+    otherNotes: "",
   };
 }
 

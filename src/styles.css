@@ -109,6 +109,13 @@ table.list-table a { color: var(--navy); }
   margin: 0;
   padding: 10px 14px;
 }
+.form-section.internal-only {
+  border: 1px dashed #b8860b;
+}
+.form-section.internal-only h2 {
+  background: #fff8e1;
+  color: #8a6d00;
+}
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -219,6 +226,13 @@ textarea { resize: vertical; min-height: 60px; }
   font-size: 13px;
   margin: 0;
   padding: 6px 12px;
+}
+.sheet-section.internal-only {
+  border-top: 3px dashed #b8860b;
+}
+.sheet-section.internal-only h3 {
+  background: #fff8e1;
+  color: #8a6d00;
 }
 .sheet-row {
   display: grid;
