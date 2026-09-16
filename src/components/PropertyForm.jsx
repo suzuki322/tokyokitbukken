@@ -11,6 +11,7 @@ import {
   ROAD_DIRECTIONS,
   roadPartsOf,
 } from "../model";
+import { uploadAttachment, deleteAttachment, attachmentUrl } from "../api";
 import StationInput from "./StationInput";
 
 // 不動産登記規則上の地目区分（全23種）。実務でよく使うものを先頭に配置。
@@ -78,11 +79,50 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
     roads: roadPartsOf(initial),
     ...coverageRatioPartsOf(initial),
     buildings: buildingsOf(initial),
+    annualIncome: initial?.annualIncome || "",
     route: initial?.route || "",
     purchasePrice: initial?.purchasePrice || "",
     dealTerms: initial?.dealTerms || "",
     otherNotes: initial?.otherNotes || "",
   }));
+
+  const propertyId = initial?.id;
+  const [attachments, setAttachments] = useState(initial?.attachments || []);
+  const [uploading, setUploading] = useState(false);
+  const [attachError, setAttachError] = useState("");
+
+  const handleFileSelect = async (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (files.length === 0) return;
+    if (!propertyId) {
+      setAttachError("先に保存してから添付してください。");
+      return;
+    }
+    setAttachError("");
+    setUploading(true);
+    try {
+      for (const file of files) {
+        const res = await uploadAttachment(propertyId, file);
+        setAttachments(res.property.attachments || []);
+      }
+    } catch (err) {
+      setAttachError(err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId) => {
+    if (!window.confirm("この添付ファイルを削除します。よろしいですか？")) return;
+    setAttachError("");
+    try {
+      const res = await deleteAttachment(propertyId, attachmentId);
+      setAttachments(res.property.attachments || []);
+    } catch (err) {
+      setAttachError(err.message);
+    }
+  };
 
   const set = (key) => (e) => setData({ ...data, [key]: e.target.value });
 
@@ -382,6 +422,9 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
           <Field label="価格">
             <input value={data.price} onChange={set("price")} placeholder="例：金565,000,000円（税込）" />
           </Field>
+          <Field label="年間収益">
+            <input value={data.annualIncome} onChange={set("annualIncome")} placeholder="例：金30,000,000円" />
+          </Field>
           <Field label="現況">
             <input value={data.status} onChange={set("status")} />
           </Field>
@@ -430,11 +473,6 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
             <Plus size={14} /> 区画を追加
           </button>
         </div>
-        <div className="form-grid wide" style={{ paddingTop: 0 }}>
-          <Field label="出所（任意）">
-            <input value={data.source} onChange={set("source")} placeholder="例：物件概要資料一式、登記事項証明書" />
-          </Field>
-        </div>
       </div>
 
       <div className="form-section internal-only">
@@ -459,6 +497,66 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
           <Field label="その他備考">
             <textarea value={data.otherNotes} onChange={set("otherNotes")} />
           </Field>
+        </div>
+      </div>
+
+      <div className="form-section">
+        <h2>６．添付ファイル（PDF・画像）</h2>
+        <div style={{ padding: 14 }}>
+          {!propertyId && (
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 8 }}>
+              ※ 添付ファイルは物件を保存した後に追加できます。
+            </div>
+          )}
+          {attachError && <div className="banner error">{attachError}</div>}
+          {attachments.length > 0 && (
+            <ul
+              style={{
+                listStyle: "none",
+                padding: 0,
+                margin: "0 0 12px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+              }}
+            >
+              {attachments.map((a) => (
+                <li key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+                  <a href={attachmentUrl(propertyId, a.id)} target="_blank" rel="noreferrer">
+                    {a.originalName}
+                  </a>
+                  <span style={{ color: "var(--muted)", fontSize: 12 }}>
+                    （{Math.max(1, Math.round((a.size || 0) / 1024))}KB）
+                  </span>
+                  <button
+                    type="button"
+                    className="btn danger"
+                    onClick={() => handleDeleteAttachment(a.id)}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <label
+            className="btn secondary"
+            style={{
+              display: "inline-flex",
+              cursor: propertyId && !uploading ? "pointer" : "not-allowed",
+              opacity: propertyId && !uploading ? 1 : 0.5,
+            }}
+          >
+            <Plus size={14} /> {uploading ? "アップロード中..." : "ファイルを追加"}
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
+              multiple
+              disabled={!propertyId || uploading}
+              onChange={handleFileSelect}
+              style={{ display: "none" }}
+            />
+          </label>
         </div>
       </div>
 

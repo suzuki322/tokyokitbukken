@@ -11,6 +11,7 @@ import {
   toNumber,
   yen,
 } from "../model";
+import { attachmentUrl } from "../api";
 
 function Row({ label, value, bold, big }) {
   return (
@@ -103,6 +104,7 @@ export default function PropertyView({ property, onBack, onEdit }) {
         <div className="sheet-section sheet-price">
           <h3>３．価格・収益</h3>
           <Row label="価格" value={p.price} bold big />
+          <Row label="年間収益" value={p.annualIncome} bold />
           <Row label="現況" value={p.status} />
           <Row label="引渡" value={p.handover} />
           <Row label="備考" value={p.notes} />
@@ -173,8 +175,26 @@ export default function PropertyView({ property, onBack, onEdit }) {
           <Row label="その他備考" value={p.otherNotes} />
         </div>
 
+        {p.attachments && p.attachments.length > 0 && (
+          <div className="sheet-section no-print">
+            <h3>添付ファイル</h3>
+            <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+              {p.attachments.map((a) => (
+                <a
+                  key={a.id}
+                  href={attachmentUrl(p.id, a.id)}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ fontSize: 13 }}
+                >
+                  {a.originalName}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="sheet-footer">
-          {p.source && <div>出所：{p.source}</div>}
           <div className="company" style={{ marginTop: 10 }}>tokyokit株式会社</div>
           <div>TEL：050-5582-2159　FAX：045-330-4295</div>
           <div>〒230-0078 神奈川県横浜市鶴見区岸谷3-6-33</div>
