@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Plus, Trash2, Save, ArrowLeft } from "lucide-react";
-import { emptyRentRow, landNumbersOf } from "../model";
+import { accessPartsOf, emptyRentRow, landNumbersOf } from "../model";
+import StationInput from "./StationInput";
 
 function Field({ label, children }) {
   return (
@@ -12,7 +13,11 @@ function Field({ label, children }) {
 }
 
 export default function PropertyForm({ initial, saving, error, onSave, onCancel }) {
-  const [data, setData] = useState(() => ({ ...initial, landNumbers: landNumbersOf(initial) }));
+  const [data, setData] = useState(() => ({
+    ...initial,
+    landNumbers: landNumbersOf(initial),
+    ...accessPartsOf(initial),
+  }));
 
   const set = (key) => (e) => setData({ ...data, [key]: e.target.value });
 
@@ -46,7 +51,15 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
   const submit = (e) => {
     e.preventDefault();
     const landNumbers = data.landNumbers.map((s) => s.trim()).filter(Boolean);
-    onSave({ ...data, landNumbers: landNumbers.length > 0 ? landNumbers : [""] });
+    const access = [data.stationText, data.walkText]
+      .map((s) => (s || "").trim())
+      .filter(Boolean)
+      .join(" ");
+    onSave({
+      ...data,
+      landNumbers: landNumbers.length > 0 ? landNumbers : [""],
+      access,
+    });
   };
 
   return (
@@ -101,7 +114,24 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
             <input value={data.residentialAddress} onChange={set("residentialAddress")} />
           </Field>
           <Field label="交通">
-            <input value={data.access} onChange={set("access")} placeholder="例：東急大井町線「緑が丘」駅 徒歩約1分" />
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <StationInput
+                value={data.stationText}
+                onChange={(v) => setData({ ...data, stationText: v })}
+                placeholder="駅名で検索（例：緑が丘）"
+              />
+              <input
+                value={data.walkText}
+                onChange={set("walkText")}
+                placeholder="例：徒歩約1分"
+              />
+              <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                駅データ提供：
+                <a href="https://express.heartrails.com/" target="_blank" rel="noreferrer">
+                  HeartRails Express
+                </a>
+              </div>
+            </div>
           </Field>
           <Field label="地目／土地権利">
             <input value={`${data.landUse}／${data.landRight}`}
