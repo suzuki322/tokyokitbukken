@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Plus, Trash2, Save, ArrowLeft } from "lucide-react";
-import { emptyRentRow } from "../model";
+import { emptyRentRow, landNumbersOf } from "../model";
 
 function Field({ label, children }) {
   return (
@@ -12,9 +12,18 @@ function Field({ label, children }) {
 }
 
 export default function PropertyForm({ initial, saving, error, onSave, onCancel }) {
-  const [data, setData] = useState(initial);
+  const [data, setData] = useState(() => ({ ...initial, landNumbers: landNumbersOf(initial) }));
 
   const set = (key) => (e) => setData({ ...data, [key]: e.target.value });
+
+  const setLandNumber = (idx) => (e) => {
+    const landNumbers = [...data.landNumbers];
+    landNumbers[idx] = e.target.value;
+    setData({ ...data, landNumbers });
+  };
+  const addLandNumber = () => setData({ ...data, landNumbers: [...data.landNumbers, ""] });
+  const removeLandNumber = (idx) =>
+    setData({ ...data, landNumbers: data.landNumbers.filter((_, i) => i !== idx) });
 
   const setFloor = (idx, key) => (e) => {
     const floors = [...data.floors];
@@ -36,7 +45,8 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
 
   const submit = (e) => {
     e.preventDefault();
-    onSave(data);
+    const landNumbers = data.landNumbers.map((s) => s.trim()).filter(Boolean);
+    onSave({ ...data, landNumbers: landNumbers.length > 0 ? landNumbers : [""] });
   };
 
   return (
@@ -61,7 +71,31 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
             </select>
           </Field>
           <Field label="所在（地番）">
-            <input value={data.landNumber} onChange={set("landNumber")} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {data.landNumbers.map((ln, i) => (
+                <div key={i} style={{ display: "flex", gap: 6 }}>
+                  <input
+                    value={ln}
+                    onChange={setLandNumber(i)}
+                    placeholder="例：3066番17"
+                    style={{ flex: 1 }}
+                  />
+                  {data.landNumbers.length > 1 && (
+                    <button type="button" className="btn danger" onClick={() => removeLandNumber(i)}>
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                className="btn secondary"
+                style={{ alignSelf: "flex-start" }}
+                onClick={addLandNumber}
+              >
+                <Plus size={14} /> 地番を追加
+              </button>
+            </div>
           </Field>
           <Field label="住居表示">
             <input value={data.residentialAddress} onChange={set("residentialAddress")} />

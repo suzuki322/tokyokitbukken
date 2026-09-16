@@ -1,5 +1,5 @@
 import { ArrowLeft, Pencil, Printer } from "lucide-react";
-import { rentRollTotals, surfaceYield, toNumber, yen } from "../model";
+import { landNumbersOf, rentRollTotals, surfaceYield, toNumber, yen } from "../model";
 
 function Row({ label, value, bold, big }) {
   return (
@@ -38,7 +38,7 @@ export default function PropertyView({ property, onBack, onEdit }) {
         <div className="sheet-section">
           <h3>１．物件基本情報</h3>
           <Row label="物件種別" value={p.propertyType} />
-          <Row label="所在（地番）" value={p.landNumber} />
+          <Row label="所在（地番）" value={landNumbersOf(p).filter(Boolean).join("、")} />
           <Row label="住居表示" value={p.residentialAddress} />
           <Row label="交通" value={p.access} />
           <Row label="地目／土地権利" value={`${p.landUse}／${p.landRight}`} />
