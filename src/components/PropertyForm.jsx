@@ -3,6 +3,33 @@ import { Plus, Trash2, Save, ArrowLeft } from "lucide-react";
 import { accessPartsOf, emptyRentRow, landNumbersOf } from "../model";
 import StationInput from "./StationInput";
 
+// 不動産登記規則上の地目区分（全23種）。実務でよく使うものを先頭に配置。
+const LAND_USE_OPTIONS = [
+  "宅地",
+  "田",
+  "畑",
+  "山林",
+  "原野",
+  "雑種地",
+  "公衆用道路",
+  "学校用地",
+  "鉄道用地",
+  "水道用地",
+  "用悪水路",
+  "ため池",
+  "堤",
+  "井溝",
+  "保安林",
+  "公園",
+  "牧場",
+  "池沼",
+  "墓地",
+  "境内地",
+  "運河用地",
+  "塩田",
+  "鉱泉地",
+];
+
 function Field({ label, children }) {
   return (
     <label>
@@ -134,11 +161,24 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
             </div>
           </Field>
           <Field label="地目／土地権利">
-            <input value={`${data.landUse}／${data.landRight}`}
-              onChange={(e) => {
-                const [landUse, landRight] = e.target.value.split("／");
-                setData({ ...data, landUse: landUse || "", landRight: landRight || "" });
-              }} />
+            <div style={{ display: "flex", gap: 6 }}>
+              <select value={data.landUse} onChange={set("landUse")} style={{ flex: 1 }}>
+                {!LAND_USE_OPTIONS.includes(data.landUse) && data.landUse && (
+                  <option value={data.landUse}>{data.landUse}</option>
+                )}
+                {LAND_USE_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+              <input
+                value={data.landRight}
+                onChange={set("landRight")}
+                placeholder="土地権利（例：所有権）"
+                style={{ flex: 1 }}
+              />
+            </div>
           </Field>
           <Field label="地積">
             <input value={data.landArea} onChange={set("landArea")} placeholder="例：134.11㎡（40.57坪）" />
