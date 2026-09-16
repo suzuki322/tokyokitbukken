@@ -50,7 +50,15 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
             <input value={data.name} onChange={set("name")} required />
           </Field>
           <Field label="物件種別">
-            <input value={data.propertyType} onChange={set("propertyType")} />
+            <select value={data.propertyType} onChange={set("propertyType")}>
+              <option value="新築ビル">新築ビル</option>
+              <option value="中古ビル">中古ビル</option>
+              <option value="戸建て">戸建て</option>
+              <option value="区分マンション">区分マンション</option>
+              <option value="新築マンション">新築マンション</option>
+              <option value="中古マンション">中古マンション</option>
+              <option value="土地">土地</option>
+            </select>
           </Field>
           <Field label="所在（地番）">
             <input value={data.landNumber} onChange={set("landNumber")} />
