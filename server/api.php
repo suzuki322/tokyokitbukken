@@ -29,18 +29,6 @@ if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
     exit;
 }
 
-if (($_GET["action"] ?? "") === "debugpath") {
-    http_response_code(200);
-    echo json_encode([
-        "dir" => __DIR__,
-        "file" => __FILE__,
-        "mtime" => date("Y-m-d H:i:s", filemtime(__FILE__)),
-        "now" => date("Y-m-d H:i:s"),
-        "listing" => @scandir(__DIR__),
-    ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-    exit;
-}
-
 $configPath = __DIR__ . "/config.php";
 if (!file_exists($configPath)) {
     http_response_code(500);
