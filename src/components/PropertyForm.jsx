@@ -78,6 +78,10 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
     roads: roadPartsOf(initial),
     ...coverageRatioPartsOf(initial),
     buildings: buildingsOf(initial),
+    route: initial?.route || "",
+    purchasePrice: initial?.purchasePrice || "",
+    dealTerms: initial?.dealTerms || "",
+    otherNotes: initial?.otherNotes || "",
   }));
 
   const set = (key) => (e) => setData({ ...data, [key]: e.target.value });
@@ -429,6 +433,31 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
         <div className="form-grid wide" style={{ paddingTop: 0 }}>
           <Field label="出所（任意）">
             <input value={data.source} onChange={set("source")} placeholder="例：物件概要資料一式、登記事項証明書" />
+          </Field>
+        </div>
+      </div>
+
+      <div className="form-section internal-only">
+        <h2>
+          ５．社内用メモ
+          <span style={{ fontWeight: "normal", fontSize: 12, marginLeft: 8 }}>
+            （印刷・PDF出力には反映されません）
+          </span>
+        </h2>
+        <div className="form-grid">
+          <Field label="ルート">
+            <input value={data.route} onChange={set("route")} placeholder="例：元付け仲介会社経由" />
+          </Field>
+          <Field label="仕入れ値">
+            <input value={data.purchasePrice} onChange={set("purchasePrice")} placeholder="例：金500,000,000円" />
+          </Field>
+        </div>
+        <div className="form-grid wide" style={{ paddingTop: 0 }}>
+          <Field label="取引条件">
+            <textarea value={data.dealTerms} onChange={set("dealTerms")} />
+          </Field>
+          <Field label="その他備考">
+            <textarea value={data.otherNotes} onChange={set("otherNotes")} />
           </Field>
         </div>
       </div>

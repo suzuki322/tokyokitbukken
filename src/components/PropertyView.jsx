@@ -165,6 +165,14 @@ export default function PropertyView({ property, onBack, onEdit }) {
           </div>
         )}
 
+        <div className="sheet-section no-print internal-only">
+          <h3>社内用メモ（印刷・PDF出力には反映されません）</h3>
+          <Row label="ルート" value={p.route} />
+          <Row label="仕入れ値" value={p.purchasePrice} />
+          <Row label="取引条件" value={p.dealTerms} />
+          <Row label="その他備考" value={p.otherNotes} />
+        </div>
+
         <div className="sheet-footer">
           {p.source && <div>出所：{p.source}</div>}
           <div className="company" style={{ marginTop: 10 }}>tokyokit株式会社</div>
