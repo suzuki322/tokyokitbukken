@@ -4,7 +4,7 @@ export function emptyProperty() {
   return {
     name: "",
     propertyType: "土地",
-    landNumber: "",
+    landNumbers: [""],
     residentialAddress: "",
     access: "",
     landUse: "宅地",
@@ -30,6 +30,22 @@ export function emptyProperty() {
     rentRoll: [emptyRentRow()],
     source: "",
   };
+}
+
+// 地番の配列を返す。新データは landNumbers（配列）、旧データは landNumber（文字列、
+// 「、」区切り）で保存されているため、どちらにも対応する。
+export function landNumbersOf(property) {
+  if (Array.isArray(property?.landNumbers) && property.landNumbers.length > 0) {
+    return property.landNumbers;
+  }
+  if (property?.landNumber) {
+    const split = String(property.landNumber)
+      .split(/[、,，]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return split.length > 0 ? split : [""];
+  }
+  return [""];
 }
 
 export function emptyRentRow() {
