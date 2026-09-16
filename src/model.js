@@ -26,13 +26,7 @@ export function emptyProperty() {
     buildingCoverage: "",
     floorAreaRatio: "",
     fireProtection: "",
-    houseNumber: "",
-    structure: "",
-    buildingUse: "",
-    totalFloorArea: "",
-    builtDate: "",
-    permitNumbers: "",
-    floors: [{ name: "1F", area: "" }],
+    buildings: [emptyBuilding()],
     price: "",
     status: "",
     handover: "相談",
@@ -119,6 +113,60 @@ export function coverageRatioPartsOf(property) {
     return { buildingCoverage: parts[0].trim(), floorAreaRatio: parts.slice(1).join("/").trim() };
   }
   return { buildingCoverage: combined, floorAreaRatio: "" };
+}
+
+export function emptyBuilding() {
+  return {
+    houseNumber: "",
+    structure: "",
+    buildingUse: "",
+    totalFloorArea: "",
+    builtDate: "",
+    permitNumbers: "",
+    floors: [{ name: "1F", area: "" }],
+  };
+}
+
+// 建物概要の配列を返す。新データは buildings（配列）で複数棟を保持するが、旧データは
+// houseNumber/structure/...・floors を物件データ直下にフラットな1棟分として持って
+// いたため、その場合は1棟分の配列に包んで表示・再編集できるようにする。
+export function buildingsOf(property) {
+  if (Array.isArray(property?.buildings) && property.buildings.length > 0) {
+    return property.buildings.map((b) => ({
+      houseNumber: b.houseNumber || "",
+      structure: b.structure || "",
+      buildingUse: b.buildingUse || "",
+      totalFloorArea: b.totalFloorArea || "",
+      builtDate: b.builtDate || "",
+      permitNumbers: b.permitNumbers || "",
+      floors: Array.isArray(b.floors) && b.floors.length > 0 ? b.floors : [{ name: "", area: "" }],
+    }));
+  }
+  const hasLegacyBuilding =
+    property?.houseNumber ||
+    property?.structure ||
+    property?.buildingUse ||
+    property?.totalFloorArea ||
+    property?.builtDate ||
+    property?.permitNumbers ||
+    (Array.isArray(property?.floors) && property.floors.length > 0);
+  if (hasLegacyBuilding) {
+    return [
+      {
+        houseNumber: property?.houseNumber || "",
+        structure: property?.structure || "",
+        buildingUse: property?.buildingUse || "",
+        totalFloorArea: property?.totalFloorArea || "",
+        builtDate: property?.builtDate || "",
+        permitNumbers: property?.permitNumbers || "",
+        floors:
+          Array.isArray(property?.floors) && property.floors.length > 0
+            ? property.floors
+            : [{ name: "1F", area: "" }],
+      },
+    ];
+  }
+  return [emptyBuilding()];
 }
 
 export function emptyRentRow() {
