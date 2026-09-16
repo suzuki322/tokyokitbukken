@@ -1,5 +1,13 @@
 // 物件データの初期値・ヘルパー関数
 
+// 前面道路の方角区分（フォーム・表示の両方で共有）。
+export const ROAD_DIRECTIONS = [
+  { key: "north", label: "北側" },
+  { key: "east", label: "東側" },
+  { key: "south", label: "南側" },
+  { key: "west", label: "西側" },
+];
+
 export function emptyProperty() {
   return {
     name: "",
@@ -11,9 +19,9 @@ export function emptyProperty() {
     walkText: "",
     landUse: "宅地",
     landRight: "所有権",
-    landArea: "",
-    landAreaTsubo: "",
-    road: "",
+    landAreaPublic: "",
+    landAreaSurveyed: "",
+    roads: { north: "", east: "", south: "", west: "" },
     zoning: "",
     buildingCoverage: "",
     floorAreaRatio: "",
@@ -62,6 +70,55 @@ export function accessPartsOf(property) {
     };
   }
   return { stationText: property?.access || "", walkText: "" };
+}
+
+// 地積（公募／実測）を { landAreaPublic, landAreaSurveyed } に分解する。旧データは
+// landArea（自由記述の1文字列。末尾に「（実測）」等が付くことが多い）のみのため、
+// その場合は実測欄にそのまま入れて表示・再編集できるようにする。
+export function landAreaPartsOf(property) {
+  if (property?.landAreaPublic !== undefined || property?.landAreaSurveyed !== undefined) {
+    return {
+      landAreaPublic: property.landAreaPublic || "",
+      landAreaSurveyed: property.landAreaSurveyed || "",
+    };
+  }
+  return { landAreaPublic: "", landAreaSurveyed: property?.landArea || "" };
+}
+
+// 前面道路を { north, east, south, west } に分解する。旧データは road（自由記述の
+// 1文字列）のみのため、その場合は北側欄にそのまま入れて表示・再編集できるように
+// する。
+export function roadPartsOf(property) {
+  if (property?.roads && typeof property.roads === "object") {
+    return {
+      north: property.roads.north || "",
+      east: property.roads.east || "",
+      south: property.roads.south || "",
+      west: property.roads.west || "",
+    };
+  }
+  if (property?.road) {
+    return { north: property.road, east: "", south: "", west: "" };
+  }
+  return { north: "", east: "", south: "", west: "" };
+}
+
+// 建蔽率／容積率を { buildingCoverage, floorAreaRatio } に分解する。旧データは
+// buildingCoverage に「80％／300％」のようにまとめて保存していたため、
+// floorAreaRatio が未設定ならスラッシュで分割して復元する。
+export function coverageRatioPartsOf(property) {
+  if (property?.floorAreaRatio) {
+    return {
+      buildingCoverage: property?.buildingCoverage || "",
+      floorAreaRatio: property.floorAreaRatio,
+    };
+  }
+  const combined = property?.buildingCoverage || "";
+  const parts = combined.split(/[／/]/);
+  if (parts.length >= 2) {
+    return { buildingCoverage: parts[0].trim(), floorAreaRatio: parts.slice(1).join("/").trim() };
+  }
+  return { buildingCoverage: combined, floorAreaRatio: "" };
 }
 
 export function emptyRentRow() {
