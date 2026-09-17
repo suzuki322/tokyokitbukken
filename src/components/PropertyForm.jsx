@@ -80,6 +80,8 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
     ...coverageRatioPartsOf(initial),
     buildings: buildingsOf(initial),
     annualIncome: initial?.annualIncome || "",
+    dealType: initial?.dealType || "",
+    contactPerson: initial?.contactPerson || "",
     route: initial?.route || "",
     purchasePrice: initial?.purchasePrice || "",
     dealTerms: initial?.dealTerms || "",
@@ -430,6 +432,12 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
           </Field>
           <Field label="引渡">
             <input value={data.handover} onChange={set("handover")} />
+          </Field>
+          <Field label="取引形態">
+            <input value={data.dealType} onChange={set("dealType")} placeholder="例：専属" />
+          </Field>
+          <Field label="担当者">
+            <input value={data.contactPerson} onChange={set("contactPerson")} placeholder="例：鈴木" />
           </Field>
         </div>
         <div className="form-grid wide">

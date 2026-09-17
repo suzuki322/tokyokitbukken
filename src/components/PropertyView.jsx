@@ -194,11 +194,38 @@ export default function PropertyView({ property, onBack, onEdit }) {
           </div>
         )}
 
-        <div className="sheet-footer">
-          <div className="company" style={{ marginTop: 10 }}>tokyokit株式会社</div>
-          <div>TEL：050-5582-2159　FAX：045-330-4295</div>
-          <div>〒230-0078 神奈川県横浜市鶴見区岸谷3-6-33</div>
-          <div>神奈川県知事（1）第32139号</div>
+        <div className="sheet-band">
+          <div className="sheet-band-logo">
+            <svg viewBox="0 0 100 100" width="34" height="34" fill="#fff">
+              <ellipse cx="50" cy="28" rx="10" ry="20" />
+              <ellipse cx="50" cy="72" rx="10" ry="20" />
+              <ellipse cx="28" cy="50" rx="20" ry="10" />
+              <ellipse cx="72" cy="50" rx="20" ry="10" />
+              <circle cx="50" cy="50" r="9" fill="#221a16" />
+            </svg>
+            <div className="sheet-band-logo-text">tokyokit inc.</div>
+          </div>
+          <div className="sheet-band-info">
+            <div className="sheet-band-company">tokyokit株式会社</div>
+            <div className="sheet-band-details">
+              <div>〒230-0078　神奈川県横浜市鶴見区岸谷3-6-33</div>
+              <div>
+                Tel　：　<span className="band-link">080-8072-2762</span>　（担当者）
+              </div>
+              <div>Fax　：　045-330-4295</div>
+              <div>神奈川県知事（1）第32139号</div>
+            </div>
+          </div>
+          <div className="sheet-band-table">
+            <div className="sheet-band-row">
+              <div className="sheet-band-label">取引形態</div>
+              <div className="sheet-band-value">{p.dealType || "-"}</div>
+            </div>
+            <div className="sheet-band-row">
+              <div className="sheet-band-label">担当者</div>
+              <div className="sheet-band-value">{p.contactPerson || "-"}</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
