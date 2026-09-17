@@ -18,7 +18,7 @@ function Row({ label, value, bold, big }) {
   return (
     <div className="sheet-row">
       <div className="label">{label}</div>
-      <div className="value" style={{ fontWeight: bold ? "bold" : "normal", fontSize: big ? 16 : undefined, color: big ? "var(--navy)" : undefined }}>
+      <div className="value" style={{ fontWeight: bold ? "bold" : "normal", fontSize: big ? 16 : undefined, color: big ? "var(--brand)" : undefined }}>
         {value || "-"}
       </div>
     </div>
