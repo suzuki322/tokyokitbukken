@@ -31,6 +31,8 @@ export function emptyProperty() {
     annualIncome: "",
     status: "",
     handover: "相談",
+    dealType: "",
+    contactPerson: "",
     notes: "",
     rentRoll: [emptyRentRow()],
     route: "",
