@@ -7,7 +7,7 @@
   --muted: #595959;
   --danger: #b3261e;
   --ok: #2e7d32;
-  font-family: Arial, "Hiragino Sans", "Yu Gothic", sans-serif;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", "Noto Sans JP", Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -355,6 +355,13 @@ textarea { resize: vertical; min-height: 60px; }
 }
 
 @media print {
+  /* 背景色・文字色を「背景のグラフィック」設定に関係なく必ず印刷する */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
   body * { visibility: hidden; }
   .sheet, .sheet * { visibility: visible; }
   .sheet {
@@ -363,7 +370,9 @@ textarea { resize: vertical; min-height: 60px; }
     left: 0;
     width: 100%;
     border: none;
-    padding-bottom: 30mm; /* 一番下に固定される帯の分の余白を確保 */
+    display: flex;
+    flex-direction: column;
+    min-height: 281mm; /* A4縦の本文高さ（297mm - 上下余白8mm×2） */
   }
   .sheet-toolbar, .app-header, .no-print { display: none !important; }
   @page { size: A4 portrait; margin: 8mm; }
@@ -377,12 +386,11 @@ textarea { resize: vertical; min-height: 60px; }
   .sheet-rentroll { font-size: 9.5px; }
   .sheet-rentroll th, .sheet-rentroll td { padding: 2px 4px; }
 
-  /* 帯（社名・連絡先・取引形態）はA4の一番下に固定表示 */
+  /* 帯（社名・連絡先・取引形態）はflexboxでA4の一番下に押し出す
+     （position:fixedはPDF変換経路によって印刷されないことがあるため使わない） */
   .sheet-band {
-    position: fixed;
-    left: 0;
-    bottom: 0;
-    width: 100%;
+    margin-top: auto;
+    flex-shrink: 0;
   }
   .sheet-band-logo { padding: 6px; }
   .sheet-band-info { padding: 6px 12px; gap: 14px; }
