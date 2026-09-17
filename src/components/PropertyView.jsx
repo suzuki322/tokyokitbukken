@@ -12,6 +12,7 @@ import {
   yen,
 } from "../model";
 import { attachmentUrl } from "../api";
+import tokyokitLogo from "../assets/tokyokit-logo.png";
 
 function Row({ label, value, bold, big }) {
   return (
@@ -196,14 +197,7 @@ export default function PropertyView({ property, onBack, onEdit }) {
 
         <div className="sheet-band">
           <div className="sheet-band-logo">
-            <svg viewBox="0 0 100 100" width="34" height="34" fill="#fff">
-              <ellipse cx="50" cy="28" rx="10" ry="20" />
-              <ellipse cx="50" cy="72" rx="10" ry="20" />
-              <ellipse cx="28" cy="50" rx="20" ry="10" />
-              <ellipse cx="72" cy="50" rx="20" ry="10" />
-              <circle cx="50" cy="50" r="9" fill="#221a16" />
-            </svg>
-            <div className="sheet-band-logo-text">tokyokit inc.</div>
+            <img src={tokyokitLogo} alt="TOKYO KIT" className="sheet-band-logo-img" />
           </div>
           <div className="sheet-band-info">
             <div className="sheet-band-company">tokyokit株式会社</div>
