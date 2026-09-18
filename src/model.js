@@ -225,3 +225,25 @@ export function surfaceYield(annualRent, price) {
   if (!p) return null;
   return (annualRent / p) * 100;
 }
+
+// 住居表示（例：「東京都目黒区緑が丘三丁目1番8号」）から、都道府県名を除いた
+// 「区市町村＋丁目」部分（例：「目黒区緑が丘三丁目」）だけを取り出す。
+// 「丁目」が含まれない住所の場合は都道府県名を除いた住所全体を返す。
+function chomeOf(address) {
+  const trimmed = String(address || "").trim();
+  if (!trimmed) return "";
+  const withoutPrefecture = trimmed.replace(/^.*?[都道府県]/, "");
+  const m = withoutPrefecture.match(/^.*?丁目/);
+  return m ? m[0] : withoutPrefecture;
+}
+
+// PDF保存・印刷時のファイル名（拡張子なし）を組み立てる。
+// 「物件概要書_{住居表示の丁目まで}{物件種別}」の形式。
+export function pdfFileNameOf(property) {
+  const address = property?.residentialAddress || landNumbersOf(property)[0] || "";
+  const chome = chomeOf(address);
+  const type = String(property?.propertyType || "").trim();
+  const base = `物件概要書_${chome}${type}` || "物件概要書";
+  // ファイル名に使えない文字は除去しておく
+  return base.replace(/[\\/:*?"<>|]/g, "");
+}
