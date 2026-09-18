@@ -4,6 +4,7 @@ import {
   coverageRatioPartsOf,
   landAreaPartsOf,
   landNumbersOf,
+  pdfFileNameOf,
   rentRollTotals,
   ROAD_DIRECTIONS,
   roadPartsOf,
@@ -37,6 +38,17 @@ export default function PropertyView({ property, onBack, onEdit }) {
     .join("　");
   const buildings = buildingsOf(p);
 
+  const handlePrint = () => {
+    const originalTitle = document.title;
+    document.title = pdfFileNameOf(p);
+    const restore = () => {
+      document.title = originalTitle;
+      window.removeEventListener("afterprint", restore);
+    };
+    window.addEventListener("afterprint", restore);
+    window.print();
+  };
+
   return (
     <div>
       <div className="sheet-toolbar no-print">
@@ -46,7 +58,7 @@ export default function PropertyView({ property, onBack, onEdit }) {
         <button className="btn secondary" onClick={onEdit}>
           <Pencil size={16} /> 編集
         </button>
-        <button className="btn" onClick={() => window.print()}>
+        <button className="btn" onClick={handlePrint}>
           <Printer size={16} /> 印刷／PDF保存
         </button>
       </div>
