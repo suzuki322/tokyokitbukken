@@ -64,6 +64,11 @@ export default function App() {
     } catch (e) {
       if (e.status === 409) {
         setError("他の変更と競合しました。一覧に戻って最新の内容を読み込み直してください。");
+      } else if (e.status === undefined) {
+        // fetch自体が失敗（通信エラー・オフライン等）した場合、
+        // e.message はブラウザ既定の英語メッセージ（例："Failed to fetch"）になるため、
+        // わかりやすい日本語メッセージに置き換える。
+        setError("通信エラーが発生し、保存できませんでした。通信状況をご確認のうえ、もう一度お試しください。");
       } else {
         setError(e.message);
       }
