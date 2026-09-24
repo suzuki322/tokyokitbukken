@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plus, Trash2, Save, ArrowLeft } from "lucide-react";
 import {
   accessPartsOf,
@@ -71,6 +71,17 @@ function Field({ label, children }) {
 }
 
 export default function PropertyForm({ initial, saving, error, onSave, onCancel }) {
+  const errorRef = useRef(null);
+
+  // 保存に失敗した際、エラーメッセージはフォーム最上部に表示されるため、
+  // 保存ボタン付近（フォーム下部）を見ている状態だと気づけない。
+  // エラー発生時は自動的にエラーメッセージまでスクロールして気づけるようにする。
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [error]);
+
   const [data, setData] = useState(() => ({
     ...initial,
     landNumbers: landNumbersOf(initial),
@@ -192,7 +203,11 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
 
   return (
     <form onSubmit={submit}>
-      {error && <div className="banner error">{error}</div>}
+      {error && (
+        <div className="banner error" ref={errorRef}>
+          {error}
+        </div>
+      )}
 
       <div className="form-section">
         <h2>１．物件基本情報</h2>
