@@ -66,7 +66,7 @@ export default function PropertyView({ property, onBack, onEdit }) {
       <div className="sheet">
         <div className="sheet-title">
           物件概要書　Property Outline Document
-          <span className="maruhi">マル秘</span>
+          <span className="maruhi" aria-label="マル秘">秘</span>
         </div>
         <div className="sheet-subtitle">{p.name}</div>
 
@@ -191,7 +191,7 @@ export default function PropertyView({ property, onBack, onEdit }) {
           <div className="sheet-section sheet-units">
             <h3>
               {p.rentRoll && p.rentRoll.length > 0 ? "５" : "４"}．住戸別価格表
-              <span className="maruhi">マル秘</span>
+              <span className="maruhi" aria-label="マル秘">秘</span>
             </h3>
             <div style={{ padding: 12 }}>
               <table className="sheet-rentroll">
