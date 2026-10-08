@@ -224,22 +224,25 @@ textarea { resize: vertical; min-height: 60px; }
   font-size: 14px;
 }
 .sheet-section h3 { position: relative; }
-/* マル秘スタンプ（画面・印刷とも、各ページの見出しバー右端に表示） */
+/* ㊙スタンプ（丸囲みの「秘」。フォントに依存しないようCSSで描画。各ページの見出しバー右端に表示） */
 .maruhi {
   position: absolute;
   right: 12px;
   top: 50%;
-  transform: translateY(-50%) rotate(-4deg);
-  display: inline-block;
-  border: 2px solid #d0021b;
-  border-radius: 4px;
+  transform: translateY(-50%) rotate(-6deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  box-sizing: border-box;
+  border: 2.5px solid #d0021b;
+  border-radius: 50%;
   background: #fff;
   color: #d0021b;
-  font-size: 13px;
+  font-size: 19px;
   font-weight: bold;
-  letter-spacing: 2px;
-  line-height: 1.3;
-  padding: 0 8px;
+  line-height: 1;
 }
 .sheet-section h3 {
   background: var(--brand);
@@ -402,8 +405,8 @@ textarea { resize: vertical; min-height: 60px; }
   .sheet-title { padding: 8px; font-size: 16px; }
   .sheet-subtitle { padding: 5px; font-size: 12px; }
   .sheet-section h3 { padding: 3px 10px; font-size: 11px; }
-  .maruhi { font-size: 11px; padding: 0 6px; border-width: 1.5px; }
-  .sheet-title .maruhi { font-size: 13px; }
+  .maruhi { width: 19px; height: 19px; font-size: 12px; border-width: 1.5px; }
+  .sheet-title .maruhi { width: 26px; height: 26px; font-size: 16px; border-width: 2px; }
   .sheet-row .label, .sheet-row .value { padding: 2.5px 10px; font-size: 10.5px; }
   .sheet-price .value { font-size: 13px; }
   .sheet-rentroll { font-size: 9.5px; }
