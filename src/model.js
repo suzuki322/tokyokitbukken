@@ -35,6 +35,7 @@ export function emptyProperty() {
     contactPerson: "",
     notes: "",
     rentRoll: [emptyRentRow()],
+    units: [],
     route: "",
     purchasePrice: "",
     dealTerms: "",
@@ -187,6 +188,11 @@ export function emptyRentRow() {
     deposit: "",
     status: "募集中",
   };
+}
+
+// 分譲マンション等の住戸別価格表の1行分。
+export function emptyUnitRow() {
+  return { floor: "", room: "", type: "", layout: "", area: "", price: "", fee: "" };
 }
 
 export function toNumber(v) {
