@@ -6,6 +6,7 @@ import {
   coverageRatioPartsOf,
   emptyBuilding,
   emptyRentRow,
+  emptyUnitRow,
   landAreaPartsOf,
   landNumbersOf,
   ROAD_DIRECTIONS,
@@ -186,6 +187,15 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
   const addRent = () => setData({ ...data, rentRoll: [...data.rentRoll, emptyRentRow()] });
   const removeRent = (idx) =>
     setData({ ...data, rentRoll: data.rentRoll.filter((_, i) => i !== idx) });
+
+  const units = data.units || [];
+  const setUnit = (idx, key) => (e) => {
+    const next = [...units];
+    next[idx] = { ...next[idx], [key]: e.target.value };
+    setData({ ...data, units: next });
+  };
+  const addUnit = () => setData({ ...data, units: [...units, emptyUnitRow()] });
+  const removeUnit = (idx) => setData({ ...data, units: units.filter((_, i) => i !== idx) });
 
   const submit = (e) => {
     e.preventDefault();
@@ -494,6 +504,45 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
           </table>
           <button type="button" className="btn secondary" style={{ marginTop: 8 }} onClick={addRent}>
             <Plus size={14} /> 区画を追加
+          </button>
+        </div>
+      </div>
+
+      <div className="form-section">
+        <h2>
+          住戸別価格表（分譲マンション向け）
+          <span style={{ fontWeight: "normal", fontSize: 12, marginLeft: 8 }}>
+            入力すると概要書の最終ページに価格表が付きます。不要なら空のままで構いません
+          </span>
+        </h2>
+        <div style={{ padding: 14, overflowX: "auto" }}>
+          <table className="rentroll-table">
+            <thead>
+              <tr>
+                <th>階</th><th>号室</th><th>タイプ</th><th>間取り</th><th>専有面積</th><th>価格</th><th>管理費等(月額)</th><th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {units.map((u, i) => (
+                <tr key={i}>
+                  <td><input value={u.floor} onChange={setUnit(i, "floor")} /></td>
+                  <td><input value={u.room} onChange={setUnit(i, "room")} /></td>
+                  <td><input value={u.type} onChange={setUnit(i, "type")} /></td>
+                  <td><input value={u.layout} onChange={setUnit(i, "layout")} /></td>
+                  <td><input value={u.area} onChange={setUnit(i, "area")} /></td>
+                  <td><input value={u.price} onChange={setUnit(i, "price")} placeholder="例：19,690万円" /></td>
+                  <td><input value={u.fee} onChange={setUnit(i, "fee")} placeholder="例：46,720円" /></td>
+                  <td>
+                    <button type="button" className="btn danger" onClick={() => removeUnit(i)}>
+                      <Trash2 size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <button type="button" className="btn secondary" style={{ marginTop: 8 }} onClick={addUnit}>
+            <Plus size={14} /> 住戸を追加
           </button>
         </div>
       </div>

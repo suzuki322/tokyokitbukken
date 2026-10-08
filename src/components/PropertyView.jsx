@@ -121,13 +121,17 @@ export default function PropertyView({ property, onBack, onEdit }) {
           <Row label="現況" value={p.status} />
           <Row label="引渡" value={p.handover} />
           <Row label="備考" value={p.notes} />
-          <Row label="満室想定月額（税抜・共益費込）" value={yen(totals.total)} />
-          <Row label="満室想定年額（税抜・共益費込）" value={yen(totals.annual)} bold />
-          <Row
-            label="表面利回り（満室想定）"
-            value={y !== null ? `${y.toFixed(2)}%` : "価格未入力"}
-            bold
-          />
+          {totals.total > 0 && (
+            <>
+              <Row label="満室想定月額（税抜・共益費込）" value={yen(totals.total)} />
+              <Row label="満室想定年額（税抜・共益費込）" value={yen(totals.annual)} bold />
+              <Row
+                label="表面利回り（満室想定）"
+                value={y !== null ? `${y.toFixed(2)}%` : "価格未入力"}
+                bold
+              />
+            </>
+          )}
         </div>
 
         {p.rentRoll && p.rentRoll.length > 0 && (
@@ -174,6 +178,34 @@ export default function PropertyView({ property, onBack, onEdit }) {
                     <td>{yen(totals.deposit)}</td>
                     <td></td>
                   </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {p.units && p.units.length > 0 && (
+          <div className="sheet-section sheet-units">
+            <h3>{p.rentRoll && p.rentRoll.length > 0 ? "５" : "４"}．住戸別価格表</h3>
+            <div style={{ padding: 12 }}>
+              <table className="sheet-rentroll">
+                <thead>
+                  <tr>
+                    <th>階</th><th>号室</th><th>タイプ</th><th>間取り</th><th>専有面積</th><th>価格</th><th>管理費等（月額）</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {p.units.map((u, i) => (
+                    <tr key={i}>
+                      <td>{u.floor}</td>
+                      <td>{u.room}</td>
+                      <td>{u.type}</td>
+                      <td>{u.layout}</td>
+                      <td>{u.area}</td>
+                      <td style={{ fontWeight: "bold" }}>{u.price || "-"}</td>
+                      <td>{u.fee}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
