@@ -47,6 +47,26 @@ export function mapQueriesOf(property) {
   return list;
 }
 
+// 国土地理院のタイルは並列取得時にまれに失敗するため、失敗したら数回やり直す。
+// 読み込みに成功（または最終的に失敗）したときに onDone を1回だけ呼ぶ。
+function MapTile({ src, style, onDone }) {
+  const [attempt, setAttempt] = useState(0);
+  return (
+    <img
+      src={attempt === 0 ? src : `${src}?retry=${attempt}`}
+      alt=""
+      style={style}
+      className="map-tile"
+      draggable={false}
+      onLoad={onDone}
+      onError={() => {
+        if (attempt >= 3) onDone();
+        else setTimeout(() => setAttempt(attempt + 1), 500 * (attempt + 1));
+      }}
+    />
+  );
+}
+
 // onStatus: "loading" | "ready" | "none"（地図なし）| "error" を親に通知する
 export default function LocationMap({ property, number, onStatus }) {
   const manual = useMemo(() => parseMapCoords(property?.mapCoords), [property?.mapCoords]);
@@ -149,16 +169,7 @@ export default function LocationMap({ property, number, onStatus }) {
           <>
             <div className="map-frame">
               {tiles.map((t) => (
-                <img
-                  key={t.key}
-                  src={t.src}
-                  alt=""
-                  style={t.style}
-                  className="map-tile"
-                  onLoad={markLoaded}
-                  onError={markLoaded}
-                  draggable={false}
-                />
+                <MapTile key={`${geo.lat}_${geo.lng}_${t.key}`} src={t.src} style={t.style} onDone={markLoaded} />
               ))}
               <div className="map-pin" />
             </div>
