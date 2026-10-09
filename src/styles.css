@@ -378,6 +378,38 @@ textarea { resize: vertical; min-height: 60px; }
   margin-bottom: 12px;
 }
 
+/* 案内図（国土地理院タイルを割合指定で並べた静止画。印刷幅が変わってもずれない） */
+.map-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 8 / 3;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: #eef1ee;
+}
+.map-tile {
+  position: absolute;
+  display: block;
+  user-select: none;
+}
+.map-pin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #d0021b;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px #d0021b, 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+.map-credit { margin-top: 4px; font-size: 10px; color: var(--muted); text-align: right; }
+.map-links { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 6px; font-size: 12px; color: var(--muted); }
+.map-note { font-size: 13px; color: var(--muted); padding: 8px 0; }
+.sheet-map { break-inside: avoid; page-break-inside: avoid; }
+
 @media print {
   /* 背景色・文字色を「背景のグラフィック」設定に関係なく必ず印刷する */
   * {
@@ -405,6 +437,7 @@ textarea { resize: vertical; min-height: 60px; }
   .sheet-title { padding: 8px; font-size: 16px; }
   .sheet-subtitle { padding: 5px; font-size: 12px; }
   .sheet-section h3 { padding: 3px 10px; font-size: 11px; }
+  .map-pin { width: 16px; height: 16px; border-width: 2px; }
   .maruhi { width: 19px; height: 19px; font-size: 12px; border-width: 1.5px; }
   .sheet-title .maruhi { width: 26px; height: 26px; font-size: 16px; border-width: 2px; }
   .sheet-row .label, .sheet-row .value { padding: 2.5px 10px; font-size: 10.5px; }

@@ -14,6 +14,7 @@ export function emptyProperty() {
     propertyType: "土地",
     landNumbers: [""],
     residentialAddress: "",
+    mapCoords: "",
     access: "",
     stationText: "",
     walkText: "",
@@ -42,6 +43,17 @@ export function emptyProperty() {
     otherNotes: "",
     attachments: [],
   };
+}
+
+// 地図の座標入力（「35.7468, 139.8613」形式）を { lat, lng } に変換する。
+// 空欄・不正な値・日本国外の値は null（＝住所から自動算出）。
+export function parseMapCoords(text) {
+  const m = String(text || "").match(/(-?\d+(?:\.\d+)?)\s*[,，\s]\s*(-?\d+(?:\.\d+)?)/);
+  if (!m) return null;
+  const lat = parseFloat(m[1]);
+  const lng = parseFloat(m[2]);
+  if (!(lat >= 20 && lat <= 46 && lng >= 122 && lng <= 154)) return null;
+  return { lat, lng };
 }
 
 // 地番の配列を返す。新データは landNumbers（配列）、旧データは landNumber（文字列、
