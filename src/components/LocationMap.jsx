@@ -1,196 +1,49 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { landNumbersOf, parseMapCoords } from "../model";
 
-// 案内図（国土地理院タイル）。
-// 住居表示（なければ地番）を国土地理院の住所検索API（無料・キー不要）で緯度経度に
-// 変換し、標準地図タイルを並べて静止画として表示する。
-// Leaflet等を使わず <img> を並べるだけにしているのは、印刷／PDF保存時に画面幅と
-// 印刷幅が違っても位置がずれないようにするため（すべて割合指定で配置）。
+// 案内図（Googleマップ埋め込み）。
+// 住居表示（なければ地番）をそのままGoogleマップの検索クエリにして表示する。
+// 「地図の座標」が入力されていれば、住所より座標を優先する。
+// APIキーは不要（埋め込み用のURLを使う）。
 
-const ZOOM = 17;
-const TILE = 256;
-// 表示範囲（タイル座標系のピクセル）。縦横比 8:3。
-const VIEW_W = 1024;
-const VIEW_H = 384;
-const TILE_URL = (z, x, y) => `https://cyberjapandata.gsi.go.jp/xyz/std/${z}/${x}/${y}.png`;
-const SEARCH_URL = "https://msearch.gsi.go.jp/address-search/AddressSearch?q=";
-
-const geocodeCache = new Map();
-
-async function geocode(query) {
-  if (geocodeCache.has(query)) return geocodeCache.get(query);
-  const res = await fetch(SEARCH_URL + encodeURIComponent(query));
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const list = await res.json();
-  const hit = Array.isArray(list) && list.length > 0 ? list[0] : null;
-  const result = hit
-    ? { lng: hit.geometry.coordinates[0], lat: hit.geometry.coordinates[1], title: hit.properties?.title || query }
-    : null;
-  geocodeCache.set(query, result);
-  return result;
-}
-
-function toTilePoint(lat, lng) {
-  const n = 2 ** ZOOM;
-  const rad = (lat * Math.PI) / 180;
-  const x = ((lng + 180) / 360) * n * TILE;
-  const y = ((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * n * TILE;
-  return { x, y };
-}
-
-export function mapQueriesOf(property) {
-  const list = [];
+export function mapQueryOf(property) {
+  const manual = parseMapCoords(property?.mapCoords);
+  if (manual) return `${manual.lat},${manual.lng}`;
   const address = String(property?.residentialAddress || "").trim();
-  if (address) list.push(address);
+  if (address) return address;
   const landNumber = landNumbersOf(property).find((s) => String(s || "").trim());
-  if (landNumber) list.push(String(landNumber).trim());
-  return list;
+  return landNumber ? String(landNumber).trim() : "";
 }
 
-// 国土地理院のタイルは並列取得時にまれに失敗するため、失敗したら数回やり直す。
-// 読み込みに成功（または最終的に失敗）したときに onDone を1回だけ呼ぶ。
-function MapTile({ src, style, onDone }) {
-  const [attempt, setAttempt] = useState(0);
-  return (
-    <img
-      src={attempt === 0 ? src : `${src}?retry=${attempt}`}
-      alt=""
-      style={style}
-      className="map-tile"
-      draggable={false}
-      onLoad={onDone}
-      onError={() => {
-        if (attempt >= 3) onDone();
-        else setTimeout(() => setAttempt(attempt + 1), 500 * (attempt + 1));
-      }}
-    />
-  );
-}
-
-// onStatus: "loading" | "ready" | "none"（地図なし）| "error" を親に通知する
-export default function LocationMap({ property, number, onStatus }) {
-  const manual = useMemo(() => parseMapCoords(property?.mapCoords), [property?.mapCoords]);
-  const queries = useMemo(() => mapQueriesOf(property), [property]);
-  const queryKey = queries.join("|");
-  const [geo, setGeo] = useState(null); // { lat, lng, title }
-  const [phase, setPhase] = useState("loading"); // loading | found | notfound | error
-  const [loadedIds, setLoadedIds] = useState(() => new Set());
-
-  useEffect(() => {
-    let cancelled = false;
-    if (manual) {
-      setGeo({ ...manual, title: "座標を直接指定" });
-      setPhase("found");
-      return undefined;
-    }
-    if (queries.length === 0) {
-      setPhase("notfound");
-      return undefined;
-    }
-    setPhase("loading");
-    (async () => {
-      try {
-        for (const q of queries) {
-          const hit = await geocode(q);
-          if (cancelled) return;
-          if (hit) {
-            setGeo(hit);
-            setPhase("found");
-            return;
-          }
-        }
-        if (!cancelled) setPhase("notfound");
-      } catch {
-        if (!cancelled) setPhase("error");
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // queryKey が変わったときだけ再検索する
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryKey, manual?.lat, manual?.lng]);
-
-  const tiles = useMemo(() => {
-    if (!geo) return [];
-    const p = toTilePoint(geo.lat, geo.lng);
-    const left = p.x - VIEW_W / 2;
-    const top = p.y - VIEW_H / 2;
-    const out = [];
-    for (let ty = Math.floor(top / TILE); ty <= Math.floor((top + VIEW_H - 1) / TILE); ty++) {
-      for (let tx = Math.floor(left / TILE); tx <= Math.floor((left + VIEW_W - 1) / TILE); tx++) {
-        out.push({
-          id: `${geo.lat}_${geo.lng}_${tx}/${ty}`,
-          src: TILE_URL(ZOOM, tx, ty),
-          style: {
-            left: `${((tx * TILE - left) / VIEW_W) * 100}%`,
-            top: `${((ty * TILE - top) / VIEW_H) * 100}%`,
-            width: `${(TILE / VIEW_W) * 100}%`,
-            height: `${(TILE / VIEW_H) * 100}%`,
-          },
-        });
-      }
-    }
-    return out;
-  }, [geo]);
-
-  // 読み込み済みタイルIDの集合から判定する（キャッシュ済みタイルが即時に読み込まれても数え漏れしない）
-  const allLoaded = phase === "found" && tiles.length > 0 && tiles.every((t) => loadedIds.has(t.id));
-
-  useEffect(() => {
-    if (!onStatus) return;
-    if (phase === "loading") onStatus("loading");
-    else if (phase === "found") onStatus(allLoaded ? "ready" : "loading");
-    else onStatus(phase === "error" ? "error" : "none");
-  }, [phase, allLoaded, onStatus]);
+export default function LocationMap({ property, number }) {
+  const query = useMemo(() => mapQueryOf(property), [property]);
 
   // 住所も座標もなければ何も出さない
-  if (!manual && queries.length === 0) return null;
+  if (!query) return null;
 
-  const markLoaded = (id) => setLoadedIds((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
-  const hidePrint = phase !== "found" ? " no-print" : "";
+  const encoded = encodeURIComponent(query);
+  const embedUrl = `https://maps.google.com/maps?q=${encoded}&hl=ja&z=17&output=embed`;
+  const openUrl = `https://www.google.com/maps/search/?api=1&query=${encoded}`;
 
   return (
-    <div className={`sheet-section sheet-map${hidePrint}`}>
+    <div className="sheet-section sheet-map">
       <h3>{number}．案内図</h3>
       <div style={{ padding: 12 }}>
-        {phase === "loading" && <div className="map-note">地図を読み込み中…</div>}
-        {phase === "notfound" && (
-          <div className="map-note">住所から位置を特定できませんでした。編集画面の「地図の座標」に緯度経度を入力してください。</div>
-        )}
-        {phase === "error" && (
-          <div className="map-note">地図の位置情報を取得できませんでした（通信エラー）。再読み込みしてください。</div>
-        )}
-        {phase === "found" && geo && (
-          <>
-            <div className="map-frame">
-              {tiles.map((t) => (
-                <MapTile key={t.id} src={t.src} style={t.style} onDone={() => markLoaded(t.id)} />
-              ))}
-              <div className="map-pin" />
-            </div>
-            <div className="map-credit">
-              出典：国土地理院（地理院タイル）{manual ? "" : "／位置は住所から自動算出した目安です"}
-            </div>
-            <div className="map-links no-print">
-              <span>検索結果：{geo.title}</span>
-              <a
-                href={`https://maps.gsi.go.jp/#17/${geo.lat.toFixed(6)}/${geo.lng.toFixed(6)}/`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                地理院地図で開く
-              </a>
-              <a
-                href={`https://www.google.com/maps?q=${geo.lat.toFixed(6)},${geo.lng.toFixed(6)}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Googleマップで開く
-              </a>
-            </div>
-          </>
-        )}
+        <div className="map-frame">
+          <iframe
+            title="案内図"
+            src={embedUrl}
+            loading="eager"
+            referrerPolicy="no-referrer-when-downgrade"
+            allowFullScreen
+          />
+        </div>
+        <div className="map-links no-print">
+          <span>検索：{query}</span>
+          <a href={openUrl} target="_blank" rel="noreferrer">
+            Googleマップで開く
+          </a>
+        </div>
       </div>
     </div>
   );
