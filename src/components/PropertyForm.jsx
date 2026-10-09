@@ -266,6 +266,13 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
           <Field label="住居表示">
             <input value={data.residentialAddress} onChange={set("residentialAddress")} />
           </Field>
+          <Field label="地図の座標（任意）">
+            <input
+              value={data.mapCoords || ""}
+              onChange={set("mapCoords")}
+              placeholder="例：35.7468, 139.8613（空欄なら住居表示から自動で位置を算出）"
+            />
+          </Field>
           <Field label="交通">
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <StationInput

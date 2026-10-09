@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ArrowLeft, Pencil, Printer } from "lucide-react";
 import {
   buildingsOf,
@@ -14,6 +15,7 @@ import {
 } from "../model";
 import { attachmentUrl } from "../api";
 import tokyokitLogo from "../assets/tokyokit-logo.png";
+import LocationMap from "./LocationMap";
 
 function Row({ label, value, bold, big }) {
   return (
@@ -37,6 +39,11 @@ export default function PropertyView({ property, onBack, onEdit }) {
     .filter(Boolean)
     .join("　");
   const buildings = buildingsOf(p);
+  const [mapStatus, setMapStatus] = useState("loading");
+  // 案内図の節番号（レントロール・住戸別価格表の有無で繰り下がる）
+  const mapNumber = ["４", "５", "６"][
+    (p.rentRoll && p.rentRoll.length > 0 ? 1 : 0) + (p.units && p.units.length > 0 ? 1 : 0)
+  ];
 
   const handlePrint = () => {
     const originalTitle = document.title;
@@ -58,8 +65,8 @@ export default function PropertyView({ property, onBack, onEdit }) {
         <button className="btn secondary" onClick={onEdit}>
           <Pencil size={16} /> 編集
         </button>
-        <button className="btn" onClick={handlePrint}>
-          <Printer size={16} /> 印刷／PDF保存
+        <button className="btn" onClick={handlePrint} disabled={mapStatus === "loading"}>
+          <Printer size={16} /> {mapStatus === "loading" ? "地図を読み込み中…" : "印刷／PDF保存"}
         </button>
       </div>
 
@@ -217,6 +224,8 @@ export default function PropertyView({ property, onBack, onEdit }) {
             </div>
           </div>
         )}
+
+        <LocationMap property={p} number={mapNumber} onStatus={setMapStatus} />
 
         <div className="sheet-section no-print internal-only">
           <h3>社内用メモ（印刷・PDF出力には反映されません）</h3>
