@@ -74,7 +74,7 @@ export default function LocationMap({ property, number, onStatus }) {
   const queryKey = queries.join("|");
   const [geo, setGeo] = useState(null); // { lat, lng, title }
   const [phase, setPhase] = useState("loading"); // loading | found | notfound | error
-  const [loadedTiles, setLoadedTiles] = useState(0);
+  const [loadedIds, setLoadedIds] = useState(() => new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -120,7 +120,7 @@ export default function LocationMap({ property, number, onStatus }) {
     for (let ty = Math.floor(top / TILE); ty <= Math.floor((top + VIEW_H - 1) / TILE); ty++) {
       for (let tx = Math.floor(left / TILE); tx <= Math.floor((left + VIEW_W - 1) / TILE); tx++) {
         out.push({
-          key: `${tx}/${ty}`,
+          id: `${geo.lat}_${geo.lng}_${tx}/${ty}`,
           src: TILE_URL(ZOOM, tx, ty),
           style: {
             left: `${((tx * TILE - left) / VIEW_W) * 100}%`,
@@ -134,12 +134,8 @@ export default function LocationMap({ property, number, onStatus }) {
     return out;
   }, [geo]);
 
-  // 位置が変わったら読み込み済みタイル数をリセット
-  useEffect(() => {
-    setLoadedTiles(0);
-  }, [geo?.lat, geo?.lng]);
-
-  const allLoaded = phase === "found" && tiles.length > 0 && loadedTiles >= tiles.length;
+  // 読み込み済みタイルIDの集合から判定する（キャッシュ済みタイルが即時に読み込まれても数え漏れしない）
+  const allLoaded = phase === "found" && tiles.length > 0 && tiles.every((t) => loadedIds.has(t.id));
 
   useEffect(() => {
     if (!onStatus) return;
@@ -151,7 +147,7 @@ export default function LocationMap({ property, number, onStatus }) {
   // 住所も座標もなければ何も出さない
   if (!manual && queries.length === 0) return null;
 
-  const markLoaded = () => setLoadedTiles((n) => n + 1);
+  const markLoaded = (id) => setLoadedIds((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
   const hidePrint = phase !== "found" ? " no-print" : "";
 
   return (
@@ -169,7 +165,7 @@ export default function LocationMap({ property, number, onStatus }) {
           <>
             <div className="map-frame">
               {tiles.map((t) => (
-                <MapTile key={`${geo.lat}_${geo.lng}_${t.key}`} src={t.src} style={t.style} onDone={markLoaded} />
+                <MapTile key={t.id} src={t.src} style={t.style} onDone={() => markLoaded(t.id)} />
               ))}
               <div className="map-pin" />
             </div>
