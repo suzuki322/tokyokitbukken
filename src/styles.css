@@ -397,6 +397,24 @@ textarea { resize: vertical; min-height: 60px; }
 .map-links { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 6px; font-size: 12px; color: var(--muted); }
 .sheet-map { break-inside: avoid; page-break-inside: avoid; }
 
+/* 物件写真 */
+.photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; padding: 12px; }
+.photo-item { margin: 0; break-inside: avoid; page-break-inside: avoid; }
+.photo-frame { width: 100%; aspect-ratio: 4 / 3; background: #f1f3f1; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.photo-frame img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; }
+.photo-item figcaption { margin-top: 3px; font-size: 12px; text-align: center; min-height: 1.4em; }
+.sheet-photos h3 { break-after: avoid; page-break-after: avoid; }
+
+/* 物件写真（編集画面） */
+.photo-edit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.photo-edit-card { border: 1px solid var(--border); padding: 6px; display: flex; flex-direction: column; gap: 6px; background: #fff; }
+.photo-edit-card img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; background: #f1f3f1; }
+.photo-edit-card input[type="text"] { width: 100%; box-sizing: border-box; font-size: 13px; }
+.photo-edit-actions { display: flex; align-items: center; gap: 4px; }
+.photo-edit-no { margin-right: auto; font-size: 12px; color: var(--muted); }
+.photo-drop { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 16px; border: 2px dashed var(--border); font-size: 13px; color: var(--muted); }
+.photo-drop.over { border-color: var(--brand); background: #f0f6f1; color: var(--brand); }
+
 @media print {
   /* 背景色・文字色を「背景のグラフィック」設定に関係なく必ず印刷する */
   * {
@@ -430,6 +448,8 @@ textarea { resize: vertical; min-height: 60px; }
   .sheet-price .value { font-size: 13px; }
   .sheet-rentroll { font-size: 9.5px; }
   .sheet-rentroll th, .sheet-rentroll td { padding: 2px 4px; }
+  .photo-grid { padding: 8px 10px; gap: 6px 10px; }
+  .photo-item figcaption { font-size: 10.5px; }
 
   /* 帯（社名・連絡先・取引形態）はflexboxでA4の一番下に押し出す
      （position:fixedはPDF変換経路によって印刷されないことがあるため使わない） */

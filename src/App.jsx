@@ -49,12 +49,13 @@ export default function App() {
     refreshList();
   };
 
-  const handleSave = async (data) => {
+  const handleSave = async (data, latestVersion) => {
     setSaving(true);
     setError("");
     try {
       if (view.name === "edit") {
-        await updateProperty(view.id, data, current.version);
+        // 添付・写真の操作でサーバー側の version が進んでいるため、フォームが保持する最新値を使う
+        await updateProperty(view.id, data, latestVersion ?? current.version);
       } else {
         await createProperty(data);
       }

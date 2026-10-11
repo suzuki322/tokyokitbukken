@@ -37,6 +37,7 @@ export function emptyProperty() {
     notes: "",
     rentRoll: [emptyRentRow()],
     units: [],
+    photos: [],
     route: "",
     purchasePrice: "",
     dealTerms: "",
@@ -264,4 +265,18 @@ export function pdfFileNameOf(property) {
   const base = `物件概要書_${chome}${type}` || "物件概要書";
   // ファイル名に使えない文字は除去しておく
   return base.replace(/[\\/:*?"<>|]/g, "");
+}
+
+// 物件写真の最大枚数（A4で見やすい範囲）
+export const MAX_PHOTOS = 12;
+
+// 掲載する写真の一覧。photos（順序・キャプション）と attachments（実ファイル）を突き合わせ、
+// 実ファイルが存在するものだけを順序どおりに返す。
+export function photosOf(property) {
+  const attachments = Array.isArray(property?.attachments) ? property.attachments : [];
+  const list = Array.isArray(property?.photos) ? property.photos : [];
+  const byId = new Map(attachments.map((a) => [a.id, a]));
+  return list
+    .filter((ph) => ph && byId.has(ph.id))
+    .map((ph) => ({ id: ph.id, caption: String(ph.caption || ""), attachment: byId.get(ph.id) }));
 }
