@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Plus, Trash2, Save, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, Save, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   accessPartsOf,
   buildingsOf,
@@ -9,10 +9,13 @@ import {
   emptyUnitRow,
   landAreaPartsOf,
   landNumbersOf,
+  MAX_PHOTOS,
+  photosOf,
   ROAD_DIRECTIONS,
   roadPartsOf,
 } from "../model";
-import { uploadAttachment, deleteAttachment, attachmentUrl } from "../api";
+import { uploadAttachment, deleteAttachment, attachmentUrl, updateProperty } from "../api";
+import { resizeImageToJpeg } from "../imageResize";
 import StationInput from "./StationInput";
 
 // 不動産登記規則上の地目区分（全23種）。実務でよく使うものを先頭に配置。
@@ -104,6 +107,13 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
   const [attachments, setAttachments] = useState(initial?.attachments || []);
   const [uploading, setUploading] = useState(false);
   const [attachError, setAttachError] = useState("");
+  // 添付・写真の操作でサーバー側の version が進むため、フォーム側でも最新値を保持する
+  const [version, setVersion] = useState(initial?.version);
+  const [photos, setPhotos] = useState(() => photosOf(initial).map((ph) => ({ id: ph.id, caption: ph.caption })));
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  const [dragOver, setDragOver] = useState(false);
+  const photoIds = new Set(photos.map((ph) => ph.id));
 
   const handleFileSelect = async (e) => {
     const files = Array.from(e.target.files || []);
@@ -119,6 +129,7 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
       for (const file of files) {
         const res = await uploadAttachment(propertyId, file);
         setAttachments(res.property.attachments || []);
+        setVersion(res.property.version);
       }
     } catch (err) {
       setAttachError(err.message);
@@ -133,8 +144,102 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
     try {
       const res = await deleteAttachment(propertyId, attachmentId);
       setAttachments(res.property.attachments || []);
+      setVersion(res.property.version);
     } catch (err) {
       setAttachError(err.message);
+    }
+  };
+
+  // ---- 物件写真 ----
+  // 追加：縮小(JPEG) → 添付としてアップロード → 写真の並び（photos）をその場で保存。
+  const addPhotos = async (fileList) => {
+    const files = Array.from(fileList || []).filter(
+      (f) => /^image\//.test(f.type) || /\.(jpe?g|png|gif|webp)$/i.test(f.name)
+    );
+    if (files.length === 0) {
+      setPhotoError("画像ファイル（JPEG・PNG・WebP・GIF）を選んでください。");
+      return;
+    }
+    if (!propertyId) {
+      setPhotoError("先に保存してから写真を追加してください。");
+      return;
+    }
+    const room = MAX_PHOTOS - photos.length;
+    if (room <= 0) {
+      setPhotoError(`写真は最大${MAX_PHOTOS}枚までです。`);
+      return;
+    }
+    const targets = files.slice(0, room);
+    setPhotoError(files.length > room ? `写真は最大${MAX_PHOTOS}枚までのため、先頭の${room}枚だけ追加します。` : "");
+    setPhotoBusy(true);
+    let ver = version;
+    let next = photos;
+    try {
+      for (const file of targets) {
+        const resized = await resizeImageToJpeg(file);
+        const res = await uploadAttachment(propertyId, resized);
+        const list = res.property.attachments || [];
+        const added = list[list.length - 1];
+        ver = res.property.version;
+        setAttachments(list);
+        setVersion(ver);
+        next = [...next, { id: added.id, caption: "" }];
+        setPhotos(next);
+      }
+    } catch (err) {
+      setPhotoError(err.message);
+    } finally {
+      if (next !== photos) {
+        try {
+          const saved = await updateProperty(propertyId, { photos: next }, ver);
+          setVersion(saved.property.version);
+        } catch (err) {
+          setPhotoError(`写真の並びの保存に失敗しました：${err.message}`);
+        }
+      }
+      setPhotoBusy(false);
+    }
+  };
+
+  const handlePhotoSelect = (e) => {
+    const files = e.target.files;
+    addPhotos(files);
+    e.target.value = "";
+  };
+
+  const handlePhotoDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (photoBusy) return;
+    addPhotos(e.dataTransfer?.files);
+  };
+
+  const setPhotoCaption = (id, caption) =>
+    setPhotos(photos.map((ph) => (ph.id === id ? { ...ph, caption } : ph)));
+
+  const movePhoto = (idx, delta) => {
+    const to = idx + delta;
+    if (to < 0 || to >= photos.length) return;
+    const next = photos.slice();
+    [next[idx], next[to]] = [next[to], next[idx]];
+    setPhotos(next);
+  };
+
+  const removePhoto = async (id) => {
+    if (!window.confirm("この写真を削除します。よろしいですか？")) return;
+    setPhotoError("");
+    setPhotoBusy(true);
+    try {
+      const res = await deleteAttachment(propertyId, id);
+      setAttachments(res.property.attachments || []);
+      const next = photos.filter((ph) => ph.id !== id);
+      setPhotos(next);
+      const saved = await updateProperty(propertyId, { photos: next }, res.property.version);
+      setVersion(saved.property.version);
+    } catch (err) {
+      setPhotoError(err.message);
+    } finally {
+      setPhotoBusy(false);
     }
   };
 
@@ -204,11 +309,19 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
       .map((s) => (s || "").trim())
       .filter(Boolean)
       .join(" ");
-    onSave({
-      ...data,
-      landNumbers: landNumbers.length > 0 ? landNumbers : [""],
-      access,
-    });
+    // attachments / version はサーバー側が管理する値。フォームの古い値で上書きしないよう送らない
+    // （添付・写真の操作は専用APIで即時反映済み）。
+    // eslint-disable-next-line no-unused-vars
+    const { attachments: _attachments, version: _version, ...rest } = data;
+    onSave(
+      {
+        ...rest,
+        landNumbers: landNumbers.length > 0 ? landNumbers : [""],
+        access,
+        photos,
+      },
+      version
+    );
   };
 
   return (
@@ -580,7 +693,94 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
       </div>
 
       <div className="form-section">
-        <h2>６．添付ファイル（PDF・画像）</h2>
+        <h2>６．物件写真（概要書・PDFに掲載）</h2>
+        <div style={{ padding: 14 }}>
+          {!propertyId && (
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 8 }}>
+              ※ 写真は物件を保存した後に追加できます。
+            </div>
+          )}
+          {photoError && <div className="banner error">{photoError}</div>}
+          {photos.length > 0 && (
+            <div className="photo-edit-grid">
+              {photos.map((ph, idx) => (
+                <div key={ph.id} className="photo-edit-card">
+                  <img src={attachmentUrl(propertyId, ph.id)} alt={ph.caption || `写真${idx + 1}`} />
+                  <input
+                    type="text"
+                    value={ph.caption}
+                    placeholder="キャプション（例：外観、リビング）"
+                    maxLength={60}
+                    onChange={(e) => setPhotoCaption(ph.id, e.target.value)}
+                  />
+                  <div className="photo-edit-actions">
+                    <span className="photo-edit-no">{idx + 1}</span>
+                    <button
+                      type="button"
+                      className="btn secondary"
+                      title="前へ"
+                      disabled={idx === 0 || photoBusy}
+                      onClick={() => movePhoto(idx, -1)}
+                    >
+                      <ChevronLeft size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="btn secondary"
+                      title="後ろへ"
+                      disabled={idx === photos.length - 1 || photoBusy}
+                      onClick={() => movePhoto(idx, 1)}
+                    >
+                      <ChevronRight size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="btn danger"
+                      title="削除"
+                      disabled={photoBusy}
+                      onClick={() => removePhoto(ph.id)}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <label
+            className={"photo-drop" + (dragOver ? " over" : "")}
+            style={{
+              cursor: propertyId && !photoBusy ? "pointer" : "not-allowed",
+              opacity: propertyId ? 1 : 0.5,
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              if (propertyId && !photoBusy) setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handlePhotoDrop}
+          >
+            <Plus size={14} />{" "}
+            {photoBusy
+              ? "処理中..."
+              : `写真を選択、またはここにドラッグ＆ドロップ（${photos.length}/${MAX_PHOTOS}枚）`}
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              disabled={!propertyId || photoBusy}
+              onChange={handlePhotoSelect}
+              style={{ display: "none" }}
+            />
+          </label>
+          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+            ※ 長辺1600pxに自動で縮小してから保存します。追加・削除は即時に保存され、並び順とキャプションは「保存する」で確定します。
+          </div>
+        </div>
+      </div>
+
+      <div className="form-section">
+        <h2>７．添付ファイル（PDF・画像）</h2>
         <div style={{ padding: 14 }}>
           {!propertyId && (
             <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 8 }}>
@@ -588,7 +788,7 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
             </div>
           )}
           {attachError && <div className="banner error">{attachError}</div>}
-          {attachments.length > 0 && (
+          {attachments.filter((a) => !photoIds.has(a.id)).length > 0 && (
             <ul
               style={{
                 listStyle: "none",
@@ -599,7 +799,7 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
                 gap: 6,
               }}
             >
-              {attachments.map((a) => (
+              {attachments.filter((a) => !photoIds.has(a.id)).map((a) => (
                 <li key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
                   <a href={attachmentUrl(propertyId, a.id)} target="_blank" rel="noreferrer">
                     {a.originalName}

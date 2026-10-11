@@ -5,6 +5,7 @@ import {
   landAreaPartsOf,
   landNumbersOf,
   pdfFileNameOf,
+  photosOf,
   rentRollTotals,
   ROAD_DIRECTIONS,
   roadPartsOf,
@@ -39,9 +40,13 @@ export default function PropertyView({ property, onBack, onEdit }) {
     .join("　");
   const buildings = buildingsOf(p);
   // 案内図の節番号（レントロール・住戸別価格表の有無で繰り下がる）
-  const mapNumber = ["４", "５", "６"][
-    (p.rentRoll && p.rentRoll.length > 0 ? 1 : 0) + (p.units && p.units.length > 0 ? 1 : 0)
-  ];
+  const photos = photosOf(p);
+  const photoIdSet = new Set(photos.map((ph) => ph.id));
+  const otherAttachments = (p.attachments || []).filter((a) => !photoIdSet.has(a.id));
+  const sectionBase = (p.rentRoll && p.rentRoll.length > 0 ? 1 : 0) + (p.units && p.units.length > 0 ? 1 : 0);
+  const SECTION_NUMBERS = ["４", "５", "６", "７"];
+  const photoNumber = SECTION_NUMBERS[sectionBase];
+  const mapNumber = SECTION_NUMBERS[sectionBase + (photos.length > 0 ? 1 : 0)];
 
   const handlePrint = () => {
     const originalTitle = document.title;
@@ -51,7 +56,21 @@ export default function PropertyView({ property, onBack, onEdit }) {
       window.removeEventListener("afterprint", restore);
     };
     window.addEventListener("afterprint", restore);
-    window.print();
+    // 写真の読み込みが終わってから印刷ダイアログを開く（未読込だとPDFに空白で出るため）
+    const pending = Array.from(document.querySelectorAll(".sheet img")).filter((img) => !img.complete);
+    if (pending.length === 0) {
+      window.print();
+      return;
+    }
+    const done = (img) =>
+      new Promise((resolve) => {
+        img.addEventListener("load", resolve, { once: true });
+        img.addEventListener("error", resolve, { once: true });
+      });
+    Promise.race([
+      Promise.all(pending.map(done)),
+      new Promise((resolve) => setTimeout(resolve, 8000)),
+    ]).then(() => window.print());
   };
 
   return (
@@ -223,6 +242,26 @@ export default function PropertyView({ property, onBack, onEdit }) {
           </div>
         )}
 
+        {photos.length > 0 && (
+          <div className="sheet-section sheet-photos">
+            <h3>{photoNumber}．物件写真</h3>
+            <div className="photo-grid">
+              {photos.map((ph, idx) => (
+                <figure key={ph.id} className="photo-item">
+                  <div className="photo-frame">
+                    <img
+                      src={attachmentUrl(p.id, ph.id)}
+                      alt={ph.caption || `物件写真${idx + 1}`}
+                      loading="eager"
+                    />
+                  </div>
+                  <figcaption>{ph.caption || "\u00a0"}</figcaption>
+                </figure>
+              ))}
+            </div>
+          </div>
+        )}
+
         <LocationMap property={p} number={mapNumber} />
 
         <div className="sheet-section no-print internal-only">
@@ -233,11 +272,11 @@ export default function PropertyView({ property, onBack, onEdit }) {
           <Row label="その他備考" value={p.otherNotes} />
         </div>
 
-        {p.attachments && p.attachments.length > 0 && (
+        {otherAttachments.length > 0 && (
           <div className="sheet-section no-print">
             <h3>添付ファイル</h3>
             <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
-              {p.attachments.map((a) => (
+              {otherAttachments.map((a) => (
                 <a
                   key={a.id}
                   href={attachmentUrl(p.id, a.id)}
