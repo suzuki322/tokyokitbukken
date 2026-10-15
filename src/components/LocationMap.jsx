@@ -12,7 +12,8 @@ export function mapQueryOf(property) {
   const address = String(property?.residentialAddress || "").trim();
   if (address) return address;
   const landNumber = landNumbersOf(property).find((s) => String(s || "").trim());
-  return landNumber ? String(landNumber).trim() : "";
+  // 「149番他」のように末尾に「他」が付く地番は、検索しやすいよう「他」を除く
+  return landNumber ? String(landNumber).trim().replace(/他$/, "") : "";
 }
 
 export default function LocationMap({ property, number }) {

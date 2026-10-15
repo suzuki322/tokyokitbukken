@@ -426,7 +426,7 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
               />
             </div>
           </Field>
-          <Field label="地積（公募）">
+          <Field label="地積（公簿）">
             <input
               value={data.landAreaPublic}
               onChange={set("landAreaPublic")}

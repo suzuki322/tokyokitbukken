@@ -39,14 +39,31 @@ export default function PropertyView({ property, onBack, onEdit }) {
     .filter(Boolean)
     .join("　");
   const buildings = buildingsOf(p);
-  // 案内図の節番号（レントロール・住戸別価格表の有無で繰り下がる）
+  // 建物の情報が何も入力されていない物件（土地など）は「建物概要」の節を出さない。
+  const hasBuilding = buildings.some(
+    (b) =>
+      b.houseNumber ||
+      b.structure ||
+      b.buildingUse ||
+      b.totalFloorArea ||
+      b.builtDate ||
+      b.permitNumbers ||
+      (b.floors || []).some((f) => f.name || f.area)
+  );
   const photos = photosOf(p);
   const photoIdSet = new Set(photos.map((ph) => ph.id));
   const otherAttachments = (p.attachments || []).filter((a) => !photoIdSet.has(a.id));
-  const sectionBase = (p.rentRoll && p.rentRoll.length > 0 ? 1 : 0) + (p.units && p.units.length > 0 ? 1 : 0);
-  const SECTION_NUMBERS = ["４", "５", "６", "７"];
-  const photoNumber = SECTION_NUMBERS[sectionBase];
-  const mapNumber = SECTION_NUMBERS[sectionBase + (photos.length > 0 ? 1 : 0)];
+  // 節番号：建物概要・レントロール・住戸別価格表・写真の有無に応じて順に振る。
+  const SECTION_NUMBERS = ["１", "２", "３", "４", "５", "６", "７", "８"];
+  let nextSection = 0;
+  const takeSection = () => SECTION_NUMBERS[nextSection++];
+  const basicNumber = takeSection();
+  const buildingNumber = hasBuilding ? takeSection() : null;
+  const priceNumber = takeSection();
+  const rentRollNumber = p.rentRoll && p.rentRoll.length > 0 ? takeSection() : null;
+  const unitsNumber = p.units && p.units.length > 0 ? takeSection() : null;
+  const photoNumber = photos.length > 0 ? takeSection() : null;
+  const mapNumber = takeSection();
 
   const handlePrint = () => {
     const originalTitle = document.title;
@@ -95,13 +112,13 @@ export default function PropertyView({ property, onBack, onEdit }) {
         <div className="sheet-subtitle">{p.name}</div>
 
         <div className="sheet-section">
-          <h3>１．物件基本情報</h3>
+          <h3>{basicNumber}．物件基本情報</h3>
           <Row label="物件種別" value={p.propertyType} />
           <Row label="所在（地番）" value={landNumbersOf(p).filter(Boolean).join("、")} />
           <Row label="住居表示" value={p.residentialAddress} />
           <Row label="交通" value={p.access} />
           <Row label="地目／土地権利" value={`${p.landUse}／${p.landRight}`} />
-          <Row label="地積（公募）" value={landAreaParts.landAreaPublic} />
+          <Row label="地積（公簿）" value={landAreaParts.landAreaPublic} />
           <Row label="地積（実測）" value={landAreaParts.landAreaSurveyed} />
           <Row label="道路" value={roadSummary} />
           <Row label="用途地域" value={p.zoning} />
@@ -110,8 +127,9 @@ export default function PropertyView({ property, onBack, onEdit }) {
           <Row label="防火指定" value={p.fireProtection} />
         </div>
 
+        {hasBuilding && (
         <div className="sheet-section">
-          <h3>２．建物概要</h3>
+          <h3>{buildingNumber}．建物概要</h3>
           {buildings.map((b, i) => (
             <div key={i}>
               {buildings.length > 1 && (
@@ -140,9 +158,10 @@ export default function PropertyView({ property, onBack, onEdit }) {
             </div>
           ))}
         </div>
+        )}
 
         <div className="sheet-section sheet-price">
-          <h3>３．価格・収益</h3>
+          <h3>{priceNumber}．価格・収益</h3>
           <Row label="価格" value={p.price} bold big />
           <Row label="年間収益" value={p.annualIncome} bold />
           <Row label="現況" value={p.status} />
@@ -163,7 +182,7 @@ export default function PropertyView({ property, onBack, onEdit }) {
 
         {p.rentRoll && p.rentRoll.length > 0 && (
           <div className="sheet-section">
-            <h3>４．想定レントロール</h3>
+            <h3>{rentRollNumber}．想定レントロール</h3>
             <div style={{ padding: 12, overflowX: "auto" }}>
               <table className="sheet-rentroll">
                 <thead>
@@ -214,7 +233,7 @@ export default function PropertyView({ property, onBack, onEdit }) {
         {p.units && p.units.length > 0 && (
           <div className="sheet-section sheet-units">
             <h3>
-              {p.rentRoll && p.rentRoll.length > 0 ? "５" : "４"}．住戸別価格表
+              {unitsNumber}．住戸別価格表
               <span className="maruhi" aria-label="マル秘">秘</span>
             </h3>
             <div style={{ padding: 12 }}>
