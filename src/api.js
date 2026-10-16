@@ -8,6 +8,9 @@ async function request(params, options = {}) {
 
   const res = await fetch(url.toString(), {
     ...options,
+    // ブラウザのHTTPキャッシュに古い一覧/物件データを返されると、
+    // 保存時のバージョンが古くなり「競合」になるため常に最新を取得する
+    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
       "X-Api-Token": API_TOKEN,
