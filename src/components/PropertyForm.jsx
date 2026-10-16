@@ -114,8 +114,13 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
   const [photoError, setPhotoError] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const photoIds = new Set(photos.map((ph) => ph.id));
+  // 「その他資料」に入れたファイルのID。それ以外の（写真でない）添付は「社内用メモ」内の社内用資料として扱う
+  const [otherFiles, setOtherFiles] = useState(() => (Array.isArray(initial?.otherFiles) ? initial.otherFiles : []));
+  const otherIds = new Set(otherFiles);
+  const memoAtts = attachments.filter((a) => !photoIds.has(a.id) && !otherIds.has(a.id));
+  const otherAtts = attachments.filter((a) => !photoIds.has(a.id) && otherIds.has(a.id));
 
-  const handleFileSelect = async (e) => {
+  const handleFileSelect = async (e, target = "memo") => {
     const files = Array.from(e.target.files || []);
     e.target.value = "";
     if (files.length === 0) return;
@@ -125,15 +130,31 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
     }
     setAttachError("");
     setUploading(true);
+    let ver = version;
+    const addedIds = [];
     try {
       for (const file of files) {
         const res = await uploadAttachment(propertyId, file);
-        setAttachments(res.property.attachments || []);
-        setVersion(res.property.version);
+        const list = res.property.attachments || [];
+        ver = res.property.version;
+        addedIds.push(list[list.length - 1].id);
+        setAttachments(list);
+        setVersion(ver);
       }
     } catch (err) {
       setAttachError(err.message);
     } finally {
+      // 「その他資料」への追加は、どの欄のファイルかをその場で保存する
+      if (target === "other" && addedIds.length > 0) {
+        const next = [...otherFiles, ...addedIds];
+        setOtherFiles(next);
+        try {
+          const saved = await updateProperty(propertyId, { otherFiles: next }, ver);
+          setVersion(saved.property.version);
+        } catch (err) {
+          setAttachError(`その他資料の保存に失敗しました：${err.message}`);
+        }
+      }
       setUploading(false);
     }
   };
@@ -145,6 +166,12 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
       const res = await deleteAttachment(propertyId, attachmentId);
       setAttachments(res.property.attachments || []);
       setVersion(res.property.version);
+      if (otherFiles.includes(attachmentId)) {
+        const next = otherFiles.filter((x) => x !== attachmentId);
+        setOtherFiles(next);
+        const saved = await updateProperty(propertyId, { otherFiles: next }, res.property.version);
+        setVersion(saved.property.version);
+      }
     } catch (err) {
       setAttachError(err.message);
     }
@@ -319,6 +346,7 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
         landNumbers: landNumbers.length > 0 ? landNumbers : [""],
         access,
         photos,
+        otherFiles,
       },
       version
     );
@@ -701,7 +729,7 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
             </div>
           )}
           {attachError && <div className="banner error">{attachError}</div>}
-          {attachments.filter((a) => !photoIds.has(a.id)).length > 0 && (
+          {memoAtts.length > 0 && (
             <ul
               style={{
                 listStyle: "none",
@@ -712,7 +740,7 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
                 gap: 6,
               }}
             >
-              {attachments.filter((a) => !photoIds.has(a.id)).map((a) => (
+              {memoAtts.map((a) => (
                 <li key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
                   <a href={attachmentUrl(propertyId, a.id)} target="_blank" rel="noreferrer">
                     {a.originalName}
@@ -745,7 +773,7 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
               accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
               multiple
               disabled={!propertyId || uploading}
-              onChange={handleFileSelect}
+              onChange={(e) => handleFileSelect(e, "memo")}
               style={{ display: "none" }}
             />
           </label>
@@ -836,6 +864,71 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
           <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
             ※ 長辺1600pxに自動で縮小してから保存します。追加・削除は即時に保存され、並び順とキャプションは「保存する」で確定します。
           </div>
+        </div>
+      </div>
+
+      <div className="form-section">
+        <h2>
+          ７．その他資料（PDF・画像）
+          <span style={{ fontWeight: "normal", fontSize: 12, marginLeft: 8 }}>
+            （概要書・PDFには反映されません）
+          </span>
+        </h2>
+        <div style={{ padding: 14 }}>
+          {!propertyId && (
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 8 }}>
+              ※ その他資料は物件を保存した後に追加できます。
+            </div>
+          )}
+          {attachError && <div className="banner error">{attachError}</div>}
+          {otherAtts.length > 0 && (
+            <ul
+              style={{
+                listStyle: "none",
+                padding: 0,
+                margin: "0 0 12px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+              }}
+            >
+              {otherAtts.map((a) => (
+                <li key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+                  <a href={attachmentUrl(propertyId, a.id)} target="_blank" rel="noreferrer">
+                    {a.originalName}
+                  </a>
+                  <span style={{ color: "var(--muted)", fontSize: 12 }}>
+                    （{Math.max(1, Math.round((a.size || 0) / 1024))}KB）
+                  </span>
+                  <button
+                    type="button"
+                    className="btn danger"
+                    onClick={() => handleDeleteAttachment(a.id)}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <label
+            className="btn secondary"
+            style={{
+              display: "inline-flex",
+              cursor: propertyId && !uploading ? "pointer" : "not-allowed",
+              opacity: propertyId && !uploading ? 1 : 0.5,
+            }}
+          >
+            <Plus size={14} /> {uploading ? "アップロード中..." : "ファイルを追加"}
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
+              multiple
+              disabled={!propertyId || uploading}
+              onChange={(e) => handleFileSelect(e, "other")}
+              style={{ display: "none" }}
+            />
+          </label>
         </div>
       </div>
 

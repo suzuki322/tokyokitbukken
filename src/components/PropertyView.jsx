@@ -52,7 +52,10 @@ export default function PropertyView({ property, onBack, onEdit }) {
   );
   const photos = photosOf(p);
   const photoIdSet = new Set(photos.map((ph) => ph.id));
-  const otherAttachments = (p.attachments || []).filter((a) => !photoIdSet.has(a.id));
+  // 写真以外の添付は、「その他資料」に入れたもの（otherFiles）と、社内用メモ内の社内用資料に分ける
+  const otherFileIds = new Set(Array.isArray(p.otherFiles) ? p.otherFiles : []);
+  const otherAttachments = (p.attachments || []).filter((a) => !photoIdSet.has(a.id) && !otherFileIds.has(a.id));
+  const extraFiles = (p.attachments || []).filter((a) => !photoIdSet.has(a.id) && otherFileIds.has(a.id));
   // 節番号：建物概要・レントロール・住戸別価格表・写真の有無に応じて順に振る。
   const SECTION_NUMBERS = ["１", "２", "３", "４", "５", "６", "７", "８"];
   let nextSection = 0;
@@ -311,6 +314,25 @@ export default function PropertyView({ property, onBack, onEdit }) {
             </div>
           )}
         </div>
+
+        {extraFiles.length > 0 && (
+          <div className="sheet-section no-print">
+            <h3>その他資料（印刷・PDF出力には反映されません）</h3>
+            <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+              {extraFiles.map((a) => (
+                <a
+                  key={a.id}
+                  href={attachmentUrl(p.id, a.id)}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ fontSize: 13 }}
+                >
+                  {a.originalName}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
 
               </td>
             </tr>
