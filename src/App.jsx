@@ -12,11 +12,11 @@ export default function App() {
   const [view, setView] = useState({ name: "list" });
   const [properties, setProperties] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
-  // フォーム/表示中のフルデータ。どの画面（key）のために読み込んだデータかを一緒に持つ。
-  // 直前に開いていた別の物件のデータが、新しい画面に引き継がれて表示・保存されるのを防ぐ。
-  const [loaded, setLoaded] = useState({ key: "", data: null });
-  const viewKey = view.name + ":" + (view.id || "");
-  const current = loaded.key === viewKey ? loaded.data : null;
+  // フォーム/表示中のフルデータ。どの画面遷移（view オブジェクト）のために読み込んだデータかを一緒に持つ。
+  // 直前の画面（別の物件、または同じ物件を前回開いたとき）のデータが、新しい画面に引き継がれて
+  // 表示・保存されるのを防ぐ（古いバージョンで保存して「競合」になる原因だった）。
+  const [loaded, setLoaded] = useState({ view: null, data: null });
+  const current = loaded.view === view ? loaded.data : null;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [banner, setBanner] = useState("");
@@ -39,13 +39,13 @@ export default function App() {
 
   useEffect(() => {
     setError("");
-    const key = view.name + ":" + (view.id || "");
+    const target = view;
     if (view.name === "edit" || view.name === "view") {
       getProperty(view.id)
-        .then((res) => setLoaded({ key, data: res.property }))
+        .then((res) => setLoaded({ view: target, data: res.property }))
         .catch((e) => setError(e.message));
     } else if (view.name === "new") {
-      setLoaded({ key, data: emptyProperty() });
+      setLoaded({ view: target, data: emptyProperty() });
     }
   }, [view]);
 
