@@ -294,6 +294,16 @@ textarea { resize: vertical; min-height: 60px; }
 }
 .sheet-rentroll tr.total td { background: var(--gray); font-weight: bold; }
 
+/* 画面表示では table を使わず通常のブロックとして扱う（印刷時のみ table として動かす） */
+.sheet-frame, .sheet-frame > tbody, .sheet-frame > tfoot,
+.sheet-frame > tbody > tr, .sheet-frame > tfoot > tr,
+.sheet-frame > tbody > tr > td, .sheet-frame > tfoot > tr > td {
+  display: block;
+  padding: 0;
+  border: 0;
+}
+.sheet-frame { width: 100%; }
+
 .sheet-band {
   display: flex;
   align-items: stretch;
@@ -423,6 +433,9 @@ textarea { resize: vertical; min-height: 60px; }
     color-adjust: exact !important;
   }
 
+  /* 帯が最下部に届かないページで、余白部分に画面用の背景色（灰色）が印刷されないようにする */
+  html, body { background: #fff !important; }
+
   body * { visibility: hidden; }
   .sheet, .sheet * { visibility: visible; }
   .sheet {
@@ -431,10 +444,21 @@ textarea { resize: vertical; min-height: 60px; }
     left: 0;
     width: 100%;
     border: none;
-    display: flex;
-    flex-direction: column;
-    min-height: 281mm; /* A4縦の本文高さ（297mm - 上下余白8mm×2） */
   }
+  /* 本文を tbody、帯を tfoot に入れた table。tfoot は改ページされても各ページの最下部に繰り返し出力される。
+     height は1ページに収まる場合に帯をページ最下部へ押し下げるための最小高さ（A4縦の本文高さ 297mm - 上下余白8mm×2）。 */
+  .sheet-frame {
+    display: table;
+    width: 100%;
+    height: 281mm;
+    border-collapse: collapse;
+    border-spacing: 0;
+  }
+  .sheet-frame > tbody { display: table-row-group; }
+  .sheet-frame > tfoot { display: table-footer-group; }
+  .sheet-frame > tbody > tr, .sheet-frame > tfoot > tr { display: table-row; }
+  .sheet-frame > tbody > tr > td, .sheet-frame > tfoot > tr > td { display: table-cell; padding: 0; vertical-align: top; }
+  .sheet-frame > tfoot > tr > td { vertical-align: bottom; }
   .sheet-toolbar, .app-header, .no-print { display: none !important; }
   @page { size: A4 portrait; margin: 8mm; }
 
@@ -451,10 +475,9 @@ textarea { resize: vertical; min-height: 60px; }
   .photo-grid { padding: 8px 10px; gap: 6px 10px; }
   .photo-item figcaption { font-size: 10.5px; }
 
-  /* 帯（社名・連絡先・取引形態）はflexboxでA4の一番下に押し出す
+  /* 帯（社名・連絡先・取引形態）は table の tfoot で全ページの最下部に出す
      （position:fixedはPDF変換経路によって印刷されないことがあるため使わない） */
   .sheet-band {
-    margin-top: auto;
     flex-shrink: 0;
   }
   .sheet-band-logo { padding: 6px; }
