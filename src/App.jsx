@@ -12,7 +12,11 @@ export default function App() {
   const [view, setView] = useState({ name: "list" });
   const [properties, setProperties] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
-  const [current, setCurrent] = useState(null); // フォーム/表示中のフルデータ
+  // フォーム/表示中のフルデータ。どの画面（key）のために読み込んだデータかを一緒に持つ。
+  // 直前に開いていた別の物件のデータが、新しい画面に引き継がれて表示・保存されるのを防ぐ。
+  const [loaded, setLoaded] = useState({ key: "", data: null });
+  const viewKey = view.name + ":" + (view.id || "");
+  const current = loaded.key === viewKey ? loaded.data : null;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [banner, setBanner] = useState("");
@@ -35,12 +39,13 @@ export default function App() {
 
   useEffect(() => {
     setError("");
+    const key = view.name + ":" + (view.id || "");
     if (view.name === "edit" || view.name === "view") {
       getProperty(view.id)
-        .then((res) => setCurrent(res.property))
+        .then((res) => setLoaded({ key, data: res.property }))
         .catch((e) => setError(e.message));
     } else if (view.name === "new") {
-      setCurrent(emptyProperty());
+      setLoaded({ key, data: emptyProperty() });
     }
   }, [view]);
 
