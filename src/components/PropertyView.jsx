@@ -289,12 +289,9 @@ export default function PropertyView({ property, onBack, onEdit }) {
           <Row label="仕入れ値" value={p.purchasePrice} />
           <Row label="取引条件" value={p.dealTerms} />
           <Row label="その他備考" value={p.otherNotes} />
-        </div>
-
-        {otherAttachments.length > 0 && (
-          <div className="sheet-section no-print">
-            <h3>添付ファイル</h3>
+          {otherAttachments.length > 0 && (
             <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ fontWeight: 600, fontSize: 13 }}>社内用資料</div>
               {otherAttachments.map((a) => (
                 <a
                   key={a.id}
@@ -307,8 +304,8 @@ export default function PropertyView({ property, onBack, onEdit }) {
                 </a>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         <div className="sheet-band">
           <div className="sheet-band-logo">

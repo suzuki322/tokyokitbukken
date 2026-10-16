@@ -690,6 +690,66 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
             <textarea value={data.otherNotes} onChange={set("otherNotes")} />
           </Field>
         </div>
+        <div style={{ borderTop: "1px solid var(--border, #d9dee7)", margin: "0 14px" }} />
+        <div style={{ padding: "12px 14px 0", fontWeight: 600, fontSize: 13 }}>
+          社内用資料（PDF・画像）
+        </div>
+        <div style={{ padding: 14 }}>
+          {!propertyId && (
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 8 }}>
+              ※ 資料は物件を保存した後に追加できます。
+            </div>
+          )}
+          {attachError && <div className="banner error">{attachError}</div>}
+          {attachments.filter((a) => !photoIds.has(a.id)).length > 0 && (
+            <ul
+              style={{
+                listStyle: "none",
+                padding: 0,
+                margin: "0 0 12px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+              }}
+            >
+              {attachments.filter((a) => !photoIds.has(a.id)).map((a) => (
+                <li key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+                  <a href={attachmentUrl(propertyId, a.id)} target="_blank" rel="noreferrer">
+                    {a.originalName}
+                  </a>
+                  <span style={{ color: "var(--muted)", fontSize: 12 }}>
+                    （{Math.max(1, Math.round((a.size || 0) / 1024))}KB）
+                  </span>
+                  <button
+                    type="button"
+                    className="btn danger"
+                    onClick={() => handleDeleteAttachment(a.id)}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <label
+            className="btn secondary"
+            style={{
+              display: "inline-flex",
+              cursor: propertyId && !uploading ? "pointer" : "not-allowed",
+              opacity: propertyId && !uploading ? 1 : 0.5,
+            }}
+          >
+            <Plus size={14} /> {uploading ? "アップロード中..." : "ファイルを追加"}
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
+              multiple
+              disabled={!propertyId || uploading}
+              onChange={handleFileSelect}
+              style={{ display: "none" }}
+            />
+          </label>
+        </div>
       </div>
 
       <div className="form-section">
@@ -776,66 +836,6 @@ export default function PropertyForm({ initial, saving, error, onSave, onCancel 
           <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
             ※ 長辺1600pxに自動で縮小してから保存します。追加・削除は即時に保存され、並び順とキャプションは「保存する」で確定します。
           </div>
-        </div>
-      </div>
-
-      <div className="form-section">
-        <h2>７．添付ファイル（PDF・画像）</h2>
-        <div style={{ padding: 14 }}>
-          {!propertyId && (
-            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 8 }}>
-              ※ 添付ファイルは物件を保存した後に追加できます。
-            </div>
-          )}
-          {attachError && <div className="banner error">{attachError}</div>}
-          {attachments.filter((a) => !photoIds.has(a.id)).length > 0 && (
-            <ul
-              style={{
-                listStyle: "none",
-                padding: 0,
-                margin: "0 0 12px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-              }}
-            >
-              {attachments.filter((a) => !photoIds.has(a.id)).map((a) => (
-                <li key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
-                  <a href={attachmentUrl(propertyId, a.id)} target="_blank" rel="noreferrer">
-                    {a.originalName}
-                  </a>
-                  <span style={{ color: "var(--muted)", fontSize: 12 }}>
-                    （{Math.max(1, Math.round((a.size || 0) / 1024))}KB）
-                  </span>
-                  <button
-                    type="button"
-                    className="btn danger"
-                    onClick={() => handleDeleteAttachment(a.id)}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          <label
-            className="btn secondary"
-            style={{
-              display: "inline-flex",
-              cursor: propertyId && !uploading ? "pointer" : "not-allowed",
-              opacity: propertyId && !uploading ? 1 : 0.5,
-            }}
-          >
-            <Plus size={14} /> {uploading ? "アップロード中..." : "ファイルを追加"}
-            <input
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
-              multiple
-              disabled={!propertyId || uploading}
-              onChange={handleFileSelect}
-              style={{ display: "none" }}
-            />
-          </label>
         </div>
       </div>
 
