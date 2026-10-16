@@ -105,6 +105,11 @@ export default function PropertyView({ property, onBack, onEdit }) {
       </div>
 
       <div className="sheet">
+        {/* 印刷時は table の tfoot（ページごとに繰り返される）に帯を入れ、全ページの最下部に帯を出す */}
+        <table className="sheet-frame">
+          <tbody>
+            <tr>
+              <td>
         <div className="sheet-title">
           物件概要書　Property Outline Document
           <span className="maruhi" aria-label="マル秘">秘</span>
@@ -307,6 +312,12 @@ export default function PropertyView({ property, onBack, onEdit }) {
           )}
         </div>
 
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td>
         <div className="sheet-band">
           <div className="sheet-band-logo">
             <img src={tokyokitLogo} alt="TOKYO KIT" className="sheet-band-logo-img" />
@@ -333,6 +344,10 @@ export default function PropertyView({ property, onBack, onEdit }) {
             </div>
           </div>
         </div>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
     </div>
   );
