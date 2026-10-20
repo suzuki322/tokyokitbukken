@@ -32,6 +32,17 @@ export default function PropertyView({ property, onBack, onEdit }) {
   const p = property;
   const totals = rentRollTotals(p.rentRoll || []);
   const y = surfaceYield(totals.annual, p.price);
+  // 想定レントロール：全行が空欄・0（面積・賃料・共益費・保証金がすべて0、部屋Noも空）の場合は
+  // 表示・PDF出力ともに省略する（節番号も詰める）。
+  const hasRentRoll =
+    Array.isArray(p.rentRoll) &&
+    p.rentRoll.length > 0 &&
+    (totals.areaM2 > 0 ||
+      totals.areaTsubo > 0 ||
+      totals.rent > 0 ||
+      totals.cam > 0 ||
+      totals.deposit > 0 ||
+      p.rentRoll.some((r) => String(r.room || "").trim() !== ""));
   const landAreaParts = landAreaPartsOf(p);
   const roadParts = roadPartsOf(p);
   const coverageRatioParts = coverageRatioPartsOf(p);
@@ -63,7 +74,7 @@ export default function PropertyView({ property, onBack, onEdit }) {
   const basicNumber = takeSection();
   const buildingNumber = hasBuilding ? takeSection() : null;
   const priceNumber = takeSection();
-  const rentRollNumber = p.rentRoll && p.rentRoll.length > 0 ? takeSection() : null;
+  const rentRollNumber = hasRentRoll ? takeSection() : null;
   const unitsNumber = p.units && p.units.length > 0 ? takeSection() : null;
   const photoNumber = photos.length > 0 ? takeSection() : null;
   const mapNumber = takeSection();
@@ -188,7 +199,7 @@ export default function PropertyView({ property, onBack, onEdit }) {
           )}
         </div>
 
-        {p.rentRoll && p.rentRoll.length > 0 && (
+        {hasRentRoll && (
           <div className="sheet-section">
             <h3>{rentRollNumber}．想定レントロール</h3>
             <div style={{ padding: 12, overflowX: "auto" }}>
