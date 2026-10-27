@@ -224,7 +224,7 @@ export default function PropertyView({ property, onBack, onEdit }) {
                         <td>{yen(r.rent)}</td>
                         <td>{yen(r.cam)}</td>
                         <td>{yen(sum)}</td>
-                        <td>{tsubo ? `@${yen(sum / tsubo)}/坪` : "-"}</td>
+                        <td>{tsubo ? `@${yen(Math.round(sum / tsubo))}/坪` : "-"}</td>
                         <td>{r.deposit ? yen(r.deposit) : "-"}</td>
                         <td>{r.status}</td>
                       </tr>
@@ -238,7 +238,7 @@ export default function PropertyView({ property, onBack, onEdit }) {
                     <td>{yen(totals.cam)}</td>
                     <td>{yen(totals.total)}</td>
                     <td>
-                      {totals.areaTsubo ? `@${yen(totals.total / totals.areaTsubo)}/坪` : "-"}
+                      {totals.areaTsubo ? `@${yen(Math.round(totals.total / totals.areaTsubo))}/坪` : "-"}
                     </td>
                     <td>{yen(totals.deposit)}</td>
                     <td></td>
